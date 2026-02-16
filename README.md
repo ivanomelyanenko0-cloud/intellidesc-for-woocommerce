@@ -27,7 +27,7 @@ Stop writing product descriptions manually! Whether you have 10 products or 10,0
 
 ### PRO FEATURES (Available on our website)
 
-Upgrade to Pro for advanced tools like bulk generation and SEO integration. Visit [https://your-site.com/pro](https://your-site.com/pro) for details and purchase.
+Upgrade to Pro for advanced tools like bulk generation and SEO integration. Visit [Freemius](https://checkout.freemius.com/plugin/23001/plan/38599/) for details and purchase.
 
 * **Bulk Generation (Smart Queue):** Select 50+ products in the list and let the AI process them in the background without timeouts.
 * **Native WooCommerce Attributes:** Automatically creates real, filterable attributes (Global Attributes) instead of just text.
@@ -69,7 +69,7 @@ Yes! Google currently offers a generous free tier for the Gemini API (approx. 15
 It generates descriptions and attributes for the parent product. You can then use the generated attributes (Pro version) to create variations manually.
 
 = Does it work with Yoast SEO? =
-Yes (Pro version only). It automatically fills the Focus Keyword, Meta Title, and Meta Description fields. Available at [https://your-site.com/pro](https://your-site.com/pro).
+Yes (Pro version only). It automatically fills the Focus Keyword, Meta Title, and Meta Description fields. Available at [Freemius](https://checkout.freemius.com/plugin/23001/plan/38599/).
 
 = How accurate is the data? =
 The plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate. We recommend reviewing the data before publishing, especially for medical or safety-critical products.
