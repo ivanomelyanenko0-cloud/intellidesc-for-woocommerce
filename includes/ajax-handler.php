@@ -5,28 +5,27 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-add_action('wp_ajax_gpa_autocomplete_features', 'gpa_handle_autocomplete_features');
+add_action('wp_ajax_ildesc_autocomplete_features', 'ildesc_handle_autocomplete_features');
 
 /**
  * Main AJAX Handler Wrapper
  */
-function gpa_handle_autocomplete_features() {
-    check_ajax_referer('gpa_autocomplete_nonce', 'nonce');
+function ildesc_handle_autocomplete_features() {
+    check_ajax_referer('ildesc_autocomplete_nonce', 'nonce');
 
     if (!current_user_can('edit_products')) {
-        wp_send_json_error(array('message' => __('Insufficient permissions.', 'gemini-product-autocomplete')));
+        wp_send_json_error(array('message' => __('Insufficient permissions.', 'intellidesc-for-woocommerce')));
     }
 
     $product_id    = isset( $_POST['product_id'] )    ? absint( $_POST['product_id'] ) : 0;
     $product_title = isset( $_POST['product_title'] ) ? sanitize_text_field( wp_unslash( $_POST['product_title'] ) ) : '';
     
     if ( $product_id === 0 || empty( $product_title ) ) {
-        wp_send_json_error( array( 'message' => __( 'Invalid product data.', 'gemini-product-autocomplete' ) ) );
+        wp_send_json_error( array( 'message' => __( 'Invalid product data.', 'intellidesc-for-woocommerce' ) ) );
     }
-    // SEO Keyword is a Pro feature, but we can safely sanitize it here. 
 
     // Call the core generation logic
-    $result = gpa_generate_content_for_product($product_id, $product_title, true);
+    $result = ildesc_generate_content_for_product($product_id, $product_title, true);
 
     if (is_wp_error($result)) {
         wp_send_json_error(array('message' => $result->get_error_message()));
@@ -39,16 +38,16 @@ function gpa_handle_autocomplete_features() {
  * Core Generation Logic
  * Can be used by AJAX (Single) or Bulk Loop (Pro)
  */
-function gpa_generate_content_for_product($product_id, $product_title, $seo_keyword = '', $is_ajax = false) {
+function ildesc_generate_content_for_product($product_id, $product_title, $seo_keyword = '', $is_ajax = false) {
     
     // 1. Basic Checks
-    $api_key = get_option(GPA_SETTINGS_KEY);
+    $api_key = get_option(ILDESC_SETTINGS_KEY);
     if (empty($api_key)) {
-        return new WP_Error('api_key', __('Gemini API Key is missing.', 'gemini-product-autocomplete'));
+        return new WP_Error('api_key', __('Gemini API Key is missing.', 'intellidesc-for-woocommerce'));
     }
 
     // 2. Language Setup
-    $selected_lang = get_option(GPA_CONTENT_LANGUAGE, 'default');
+    $selected_lang = get_option(ILDESC_CONTENT_LANGUAGE, 'default');
     $target_language = ($selected_lang === 'default') ? substr(get_locale(), 0, 2) : $selected_lang;
     $target_language = !empty($target_language) ? sanitize_text_field($target_language) : 'en';
     $language_instruction = "IMPORTANT: Write ALL content in language code: '{$target_language}'.";
@@ -73,7 +72,7 @@ function gpa_generate_content_for_product($product_id, $product_title, $seo_keyw
     $desc_prompt_part = "Create a universal, factual 'Long_Description' (2 paragraphs). Keep it generic and safe. NO HTML tags, just plain text.";
     
     // E. TEMPLATES (Category Rules)
-    $templates = get_option('gpa_category_templates', []);
+    $templates = get_option( ILDESC_CATEGORY_TEMPLATES, []);
     $specialized_features_prompt = '';
     $allowed_features_list = []; 
     $terms = get_the_terms($product_id, 'product_cat');
@@ -199,7 +198,7 @@ function gpa_generate_content_for_product($product_id, $product_title, $seo_keyw
     $product = wc_get_product($product_id);
     if (!$product) return new WP_Error('not_found', 'Product not found.');
 
-    $overwrite = get_option('gpa_overwrite_data', 0);
+    $overwrite = get_option( ILDESC_OVERWRITE_DATA, 0 );
 
     if ($overwrite || empty($product->get_short_description())) {
         $product->set_short_description(wp_kses_post($features_json['Short_Description'] ?? ''));
@@ -230,25 +229,21 @@ function gpa_generate_content_for_product($product_id, $product_title, $seo_keyw
             }
             $editable_features[] = ['name' => $f_name, 'value' => $f_value];
         }
-        update_post_meta($product_id, '_gpa_editable_features', $editable_features);
+        update_post_meta($product_id, '_ildesc_editable_features', $editable_features);
     }
     
     $product->save();
-
-    // ---------------------------------------------------------
-    // 8. PRO FEATURES: SAVING EXTRAS
-    // ---------------------------------------------------------
 
     $reload_required = false;
 
     return [
         'success' => true,
-        'message' => __('Content generated successfully!', 'gemini-product-autocomplete'),
+        'message' => __('Content generated successfully!', 'intellidesc-for-woocommerce'),
         'short_description' => $features_json['Short_Description'] ?? '',
         'long_description' => $features_json['Long_Description'] ?? '',
         'smm_post' => $features_json['Social_Media_Post'] ?? '', 
         'features' => $editable_features,
         'reload_required' => $reload_required,
-        'attr_msg' => __('Attributes created. Reloading...', 'gemini-product-autocomplete')
+        'attr_msg' => __('Attributes created. Reloading...', 'intellidesc-for-woocommerce')
     ];
 }

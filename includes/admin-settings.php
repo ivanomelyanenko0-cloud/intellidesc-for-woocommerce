@@ -5,51 +5,57 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-if (!defined('GPA_SETTINGS_KEY')) { define( 'GPA_SETTINGS_KEY', 'gpa_gemini_api_key' ); }
-
-define( 'GPA_CATEGORY_TEMPLATES', 'gpa_category_templates' );
-define( 'GPA_CONTENT_LANGUAGE', 'gpa_content_language' );
+define( 'ILDESC_CATEGORY_TEMPLATES', 'ildesc_category_templates' );
+define( 'ILDESC_CONTENT_LANGUAGE', 'ildesc_content_language' );
 
 // Pro Constants
-define( 'GPA_SELECTED_MODEL', 'gpa_selected_model' );
-define( 'GPA_LICENSE_KEY', 'gpa_license_key' );
-define( 'GPA_LICENSE_STATUS', 'gpa_license_status' );
+define( 'ILDESC_SELECTED_MODEL', 'ildesc_selected_model' );
+define( 'ILDESC_LICENSE_KEY', 'ildesc_license_key' );
+define( 'ILDESC_LICENSE_STATUS', 'ildesc_license_status' );
 
-function gpa_register_settings() {
-    $option_group = 'gpa_settings_group';
-    $page_slug    = 'gpa_settings_page';
+function ildesc_register_settings() {
+    $option_group = 'ildesc_settings_group';
+    $page_slug    = 'ildesc_settings_page';
 
     // 1. Common Settings (Free & Pro)
     // ---------------------------------------------------------
     
     // API Key
-    register_setting( $option_group, GPA_SETTINGS_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+    register_setting( $option_group, ILDESC_SETTINGS_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
     
     // Templates
-    register_setting( $option_group, GPA_CATEGORY_TEMPLATES, array('type' => 'array', 'sanitize_callback' => 'gpa_sanitize_category_templates') );
+    register_setting( $option_group, ILDESC_CATEGORY_TEMPLATES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_category_templates') );
 
     // Language
-    register_setting( $option_group, GPA_CONTENT_LANGUAGE, array('type' => 'string', 'default' => 'default') );
+    register_setting( 
+        $option_group, 
+        ILDESC_CONTENT_LANGUAGE, 
+        array(
+            'type'              => 'string',
+            'default'           => 'default',
+            'sanitize_callback' => 'sanitize_text_field'
+        )
+    );
 
     // 3. Sections
     add_settings_section(
-        'gpa_templates_section',
-        esc_html__( 'Feature Templates Settings', 'gemini-product-autocomplete' ),
-        'gpa_templates_section_callback',
+        'ildesc_templates_section',
+        esc_html__( 'Feature Templates Settings', 'intellidesc-for-woocommerce' ),
+        'ildesc_templates_section_callback',
         $page_slug 
     );
     
     add_settings_field(
-        'gpa_category_template_fields',
-        esc_html__( 'Templates by Category', 'gemini-product-autocomplete' ),
-        'gpa_category_template_fields_callback',
+        'ildesc_category_template_fields',
+        esc_html__( 'Templates by Category', 'intellidesc-for-woocommerce' ),
+        'ildesc_category_template_fields_callback',
         $page_slug,
-        'gpa_templates_section'
+        'ildesc_templates_section'
     );
 }
-add_action( 'admin_init', 'gpa_register_settings' );
+add_action( 'admin_init', 'ildesc_register_settings' );
 
-function gpa_sanitize_category_templates( $input ) {
+function ildesc_sanitize_category_templates( $input ) {
     if ( empty($input) || !is_array($input) ) {
         return [];
     }
@@ -66,18 +72,18 @@ function gpa_sanitize_category_templates( $input ) {
     return $sanitized;
 }
 
-function gpa_templates_section_callback() {
-    echo '<p>' . esc_html__( 'Define mandatory features that Gemini should look for specific WooCommerce categories.', 'gemini-product-autocomplete' ) . '</p>';
+function ildesc_templates_section_callback() {
+    echo '<p>' . esc_html__( 'Define mandatory features that Gemini should look for specific WooCommerce categories.', 'intellidesc-for-woocommerce' ) . '</p>';
 }
 
-function gpa_category_template_fields_callback() {
-    $templates = get_option( GPA_CATEGORY_TEMPLATES, [] );
+function ildesc_category_template_fields_callback() {
+    $templates = get_option( ILDESC_CATEGORY_TEMPLATES, [] );
     if (!is_array($templates)) { $templates = []; }
     $categories = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false ) );
 
     ob_start();
     ?>
-    <option value="0"><?php esc_html_e( '— Select Category —', 'gemini-product-autocomplete' ); ?></option>
+    <option value="0"><?php esc_html_e( '— Select Category —', 'intellidesc-for-woocommerce' ); ?></option>
     <?php foreach ( $categories as $cat ): ?>
         <option value="<?php echo esc_attr( $cat->term_id ); ?>">
             <?php echo esc_html( $cat->name ); ?>
@@ -86,23 +92,23 @@ function gpa_category_template_fields_callback() {
     $category_options_html = ob_get_clean();
     ?>
     
-    <input type="hidden" name="<?php echo esc_attr( GPA_CATEGORY_TEMPLATES ); ?>" value="" />
+    <input type="hidden" name="<?php echo esc_attr( ILDESC_CATEGORY_TEMPLATES ); ?>" value="" />
 
-    <table id="gpa-templates-table" class="widefat striped gpa-table-layout">
+    <table id="ildesc-templates-table" class="widefat striped ildesc-table-layout" data-index="<?php echo intval( count( $templates ) + 100 ); ?>" data-options="<?php echo esc_attr( wp_json_encode( $category_options_html ) ); ?>">
         <thead>
             <tr>
-                <th class="gpa-col-category"><?php esc_html_e( 'WooCommerce Category', 'gemini-product-autocomplete' ); ?></th>
-                <th><?php esc_html_e( 'Mandatory Features (comma separated)', 'gemini-product-autocomplete' ); ?></th>
-                <th class="gpa-col-action"></th>
+                <th class="ildesc-col-category"><?php esc_html_e( 'WooCommerce Category', 'intellidesc-for-woocommerce' ); ?></th>
+                <th><?php esc_html_e( 'Mandatory Features (comma separated)', 'intellidesc-for-woocommerce' ); ?></th>
+                <th class="ildesc-col-action"></th>
             </tr>
         </thead>
         <tbody>
             <?php if ( ! empty( $templates ) ): ?>
                 <?php foreach ( $templates as $index => $template ): ?>
-                    <tr class="gpa-template-row">
+                    <tr class="ildesc-template-row">
                         <td>
-                            <select name="<?php echo esc_attr( GPA_CATEGORY_TEMPLATES ); ?>[<?php echo esc_attr( $index ); ?>][category_id]" class="gpa-input-wide">
-                                <option value="0"><?php esc_html_e( '— Select Category —', 'gemini-product-autocomplete' ); ?></option>
+                            <select name="<?php echo esc_attr( ILDESC_CATEGORY_TEMPLATES ); ?>[<?php echo esc_attr( $index ); ?>][category_id]" class="ildesc-input-wide">
+                                <option value="0"><?php esc_html_e( '— Select Category —', 'intellidesc-for-woocommerce' ); ?></option>
                                 <?php foreach ( $categories as $cat ): ?>
                                     <option value="<?php echo esc_attr( $cat->term_id ); ?>" 
                                             <?php selected( $cat->term_id, $template['category_id'] ); ?>>
@@ -112,12 +118,12 @@ function gpa_category_template_fields_callback() {
                             </select>
                         </td>
                         <td>
-                            <input type="text" name="<?php echo esc_attr( GPA_CATEGORY_TEMPLATES ); ?>[<?php echo esc_attr( $index ); ?>][features]" 
+                            <input type="text" name="<?php echo esc_attr( ILDESC_CATEGORY_TEMPLATES ); ?>[<?php echo esc_attr( $index ); ?>][features]" 
                                    value="<?php echo esc_attr( $template['features'] ); ?>" 
-                                   placeholder="Processor, RAM..." class="gpa-input-wide">
+                                   placeholder="Processor, RAM..." class="ildesc-input-wide">
                         </td>
                         <td>
-                             <button type="button" class="button gpa-remove-template"><?php esc_html_e( 'Remove', 'gemini-product-autocomplete' ); ?></button>
+                             <button type="button" class="button ildesc-remove-template"><?php esc_html_e( 'Remove', 'intellidesc-for-woocommerce' ); ?></button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -126,42 +132,17 @@ function gpa_category_template_fields_callback() {
         <tfoot>
             <tr>
                 <td colspan="3">
-                    <button type="button" id="gpa-add-template" class="button button-secondary"><?php esc_html_e( 'Add Template', 'gemini-product-autocomplete' ); ?></button>
+                    <button type="button" id="ildesc-add-template" class="button button-secondary"><?php esc_html_e( 'Add Template', 'intellidesc-for-woocommerce' ); ?></button>
                 </td>
             </tr>
         </tfoot>
     </table>
-    
-    <script>
-        jQuery(document).ready(function($) {
-            var templateIndex = <?php echo intval( count( $templates ) + 100 ); ?>;
-            var categoryOptions = <?php echo wp_json_encode( $category_options_html ); ?>;
-            
-            $('#gpa-add-template').on('click', function() {
-                var newRow = '<tr class="gpa-template-row"><td>' +
-                    '<select name="<?php echo esc_attr( GPA_CATEGORY_TEMPLATES ); ?>[' + templateIndex + '][category_id]" class="gpa-input-wide">' + 
-                    categoryOptions + 
-                    '</select>' +
-                    '</td><td>' +
-                    '<input type="text" name="<?php echo esc_attr( GPA_CATEGORY_TEMPLATES ); ?>[' + templateIndex + '][features]" class="gpa-input-wide">' +
-                    '</td><td>' +
-                    '<button type="button" class="button gpa-remove-template"><?php esc_html_e( 'Remove', 'gemini-product-autocomplete' ); ?></button>' +
-                    '</td></tr>';
-                $('#gpa-templates-table tbody').append(newRow);
-                templateIndex++;
-            });
-            
-            $('#gpa-templates-table').on('click', '.gpa-remove-template', function() {
-                $(this).closest('tr').remove();
-            });
-        });
-    </script>
     <?php
 }
 
-function gpa_get_available_languages() {
+function ildesc_get_available_languages() {
     return array(
-        'default' => __( 'WordPress Default Language', 'gemini-product-autocomplete' ),
+        'default' => __( 'WordPress Default Language', 'intellidesc-for-woocommerce' ),
         'en' => 'English',
         'uk' => 'Українська',
         'pl' => 'Polski',
@@ -169,68 +150,67 @@ function gpa_get_available_languages() {
         'fr' => 'Français (French)',
         'es' => 'Español (Spanish)',
         'it' => 'Italiano (Italian)',
-        // ... (truncated for brevity, same as Pro)
     );
 }
 
-function gpa_add_settings_page() {
+function ildesc_add_settings_page() {
     add_submenu_page(
         'woocommerce',
-        __( 'Gemini API Settings', 'gemini-product-autocomplete' ),
-        __( 'Gemini Autocomplete', 'gemini-product-autocomplete' ),
+        __( 'IntelliDesc Settings', 'intellidesc-for-woocommerce' ),
+        __( 'IntelliDesc', 'intellidesc-for-woocommerce' ),
         'manage_options',
-        'gemini-autocomplete-settings',
-        'gpa_settings_page_content'
+        'ildesc_settings_page',
+        'ildesc_settings_page_content'
     );
 }
-add_action( 'admin_menu', 'gpa_add_settings_page' );
+add_action( 'admin_menu', 'ildesc_add_settings_page' );
 
-function gpa_settings_page_content() {
+function ildesc_settings_page_content() {
     ?>
     <div class="wrap">
-        <h2><?php esc_html_e( 'Gemini Product Autocomplete Settings', 'gemini-product-autocomplete' ); ?></h2>        
+        <h2><?php esc_html_e( 'IntelliDesc for WooCommerce', 'intellidesc-for-woocommerce' ); ?></h2>        
         
-        <details class="gpa-info-card">
-            <summary class="gpa-info-header">
-                <div class="gpa-icon-text">
+        <details class="ildesc-info-card">
+            <summary class="ildesc-info-header">
+                <div class="ildesc-icon-text">
                     <span class="dashicons dashicons-info-outline"></span> 
-                    <span><?php esc_html_e('How to get API Key & Pricing Limits (Read First)', 'gemini-product-autocomplete'); ?></span>
+                    <span><?php esc_html_e('How to get API Key & Pricing Limits (Read First)', 'intellidesc-for-woocommerce'); ?></span>
                 </div>
                 <span class="dashicons dashicons-arrow-down-alt2"></span>
             </summary>
             
-            <div class="gpa-info-content">
-                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <h3><?php esc_html_e('1. How to get a FREE API Key', 'gemini-product-autocomplete'); ?></h3>
+            <div class="ildesc-info-content">
+                <div class="ildesc-info-flex-container">
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e('1. How to get a FREE API Key', 'intellidesc-for-woocommerce'); ?></h3>
                         <ol>
-                            <li><?php esc_html_e('Go to', 'gemini-product-autocomplete'); ?> <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</li>
-                            <li><?php echo wp_kses_post( __('Click <strong>"Create API Key"</strong>.', 'gemini-product-autocomplete') ); ?></li>
-                            <li><?php esc_html_e('Select "Create API key in new project".', 'gemini-product-autocomplete'); ?></li>
-                            <li><?php esc_html_e('Copy the key and paste it below.', 'gemini-product-autocomplete'); ?></li>
+                            <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</li>
+                            <li><?php echo wp_kses_post( __('Click <strong>"Create API Key"</strong>.', 'intellidesc-for-woocommerce') ); ?></li>
+                            <li><?php esc_html_e('Select "Create API key in new project".', 'intellidesc-for-woocommerce'); ?></li>
+                            <li><?php esc_html_e('Copy the key and paste it below.', 'intellidesc-for-woocommerce'); ?></li>
                         </ol>
                     </div>
 
-                    <div style="flex: 1; min-width: 300px;">
-                        <h3><?php esc_html_e('2. Is it Free?', 'gemini-product-autocomplete'); ?></h3>
-                        <p><?php echo wp_kses_post( __('Yes! The <strong>"Gemini Flash"</strong> models (2.0 / 2.5) have a generous free tier.', 'gemini-product-autocomplete') ); ?></p>
-                        <p style="margin-top:5px;"><strong><?php esc_html_e('Limits:', 'gemini-product-autocomplete'); ?></strong> 5 - 15 requests / minute.</p>
-                        <p><em><?php esc_html_e('The plugin automatically handles delays for bulk actions to keep you safe.', 'gemini-product-autocomplete'); ?></em></p>
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e('2. Is it Free?', 'intellidesc-for-woocommerce'); ?></h3>
+                        <p><?php echo wp_kses_post( __('Yes! The <strong>"Gemini Flash"</strong> models (2.0 / 2.5) have a generous free tier.', 'intellidesc-for-woocommerce') ); ?></p>
+                        <p class="ildesc-margin-top-5"><strong><?php esc_html_e('Limits:', 'intellidesc-for-woocommerce'); ?></strong> 5 - 15 requests / minute.</p>
+                        <p><em><?php esc_html_e('The plugin automatically handles delays for bulk actions to keep you safe.', 'intellidesc-for-woocommerce'); ?></em></p>
                     </div>
                 </div>
 
-                <table class="gpa-limit-table">
+                <table class="ildesc-limit-table">
                     <thead>
                         <tr>
-                            <th style="width: 20%;"><?php esc_html_e('Plan', 'gemini-product-autocomplete'); ?></th>
-                            <th style="width: 30%;"><?php esc_html_e('Speed Limit (RPM)', 'gemini-product-autocomplete'); ?></th>
-                            <th><?php esc_html_e('Daily Limit (approx)', 'gemini-product-autocomplete'); ?></th>
+                            <th class="ildesc-col-20"><?php esc_html_e('Plan', 'intellidesc-for-woocommerce'); ?></th>
+                            <th class="ildesc-col-30"><?php esc_html_e('Speed Limit (RPM)', 'intellidesc-for-woocommerce'); ?></th>
+                            <th><?php esc_html_e('Daily Limit (approx)', 'intellidesc-for-woocommerce'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><strong>Free</strong></td>
-                            <td><strong>5 - 15 RPM</strong><br><span style="font-size:10px; color:#888;">(Depends on model version)</span></td>
+                            <td><strong>5 - 15 RPM</strong><br><span class="ildesc-text-small-muted">(Depends on model version)</span></td>
                             <td>~1,500 Requests / Day</td>
                         </tr>
                         <tr>
@@ -244,27 +224,27 @@ function gpa_settings_page_content() {
         </details>
 
         <form method="post" action="options.php">
-            <?php settings_fields( 'gpa_settings_group' ); ?>       
-            <h3><?php esc_html_e( 'Main API Settings', 'gemini-product-autocomplete' ); ?></h3>
+            <?php settings_fields( 'ildesc_settings_group' ); ?>       
+            <h3><?php esc_html_e( 'Main API Settings', 'intellidesc-for-woocommerce' ); ?></h3>
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row"><?php esc_html_e( 'Gemini API Key', 'gemini-product-autocomplete' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Gemini API Key', 'intellidesc-for-woocommerce' ); ?></th>
                     <td>
-                        <input type="text" name="<?php echo esc_attr( GPA_SETTINGS_KEY ); ?>" 
-                               value="<?php echo esc_attr( get_option( GPA_SETTINGS_KEY ) ); ?>" 
-                               style="width: 400px;" placeholder="AIzaSy..."/>
+                        <input type="text" name="<?php echo esc_attr( ILDESC_SETTINGS_KEY ); ?>" 
+                            value="<?php echo esc_attr( get_option( ILDESC_SETTINGS_KEY ) ); ?>" 
+                            class="ildesc-api-key-input" placeholder="AIzaSy..."/>
                     </td>
                 </tr>
             </table>
 
-            <h3><?php esc_html_e( 'Content Generation', 'gemini-product-autocomplete' ); ?></h3>
+            <h3><?php esc_html_e( 'Content Generation', 'intellidesc-for-woocommerce' ); ?></h3>
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row"><?php esc_html_e( 'Language', 'gemini-product-autocomplete' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'Language', 'intellidesc-for-woocommerce' ); ?></th>
                     <td>
-                        <select name="<?php echo esc_attr( GPA_CONTENT_LANGUAGE ); ?>">
-                            <?php foreach ( gpa_get_available_languages() as $code => $name ) : ?>
-                                <option value="<?php echo esc_attr( $code ); ?>" <?php selected( get_option( GPA_CONTENT_LANGUAGE, 'default' ), $code ); ?>>
+                        <select name="<?php echo esc_attr( ILDESC_CONTENT_LANGUAGE ); ?>">
+                            <?php foreach ( ildesc_get_available_languages() as $code => $name ) : ?>
+                                <option value="<?php echo esc_attr( $code ); ?>" <?php selected( get_option( ILDESC_CONTENT_LANGUAGE, 'default' ), $code ); ?>>
                                     <?php echo esc_html( $name ); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -272,64 +252,26 @@ function gpa_settings_page_content() {
                     </td>
                 </tr>
             </table>
-                <hr style="margin: 30px 0;">
-                <div style="opacity: 0.6; pointer-events: none; filter: grayscale(1);">
-                    <h3>
-                        <?php esc_html_e( 'Advanced Content Settings', 'gemini-product-autocomplete' ); ?> 
-                        <span style="background: #2271b1; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; vertical-align: middle; margin-left: 10px;">PRO ONLY</span>
-                    </h3>
-                    <table class="form-table">
-                        <tr valign="top">
-                            <th scope="row"><?php esc_html_e( 'Tone of Voice', 'gemini-product-autocomplete' ); ?></th>
-                            <td>
-                                <select disabled>
-                                    <option selected>Neutral / Informative</option>
-                                    <option>Persuasive (Sales)</option>
-                                    <option>Playful / Fun</option>
-                                    <option>Luxury / Elegant</option>
-                                </select>
-                                <p class="description"><?php esc_html_e( 'Available in Pro: Adjust the AI personality to match your brand.', 'gemini-product-autocomplete' ); ?></p>
-                            </td>
-                        </tr>
-                        <tr valign="top">
-                            <th scope="row"><?php esc_html_e( 'Product Presets', 'gemini-product-autocomplete' ); ?></th>
-                            <td>
-                                <select disabled>
-                                    <option selected>Generic</option>
-                                    <option>Fashion & Apparel</option>
-                                    <option>Electronics</option>
-                                    <option>Beauty & Cosmetics</option>
-                                    <option>Automotive</option>
-                                </select>
-                                <p class="description"><?php esc_html_e( 'Available in Pro: Optimized prompts for specific niches (e.g. Fabric for clothes, Specs for tech).', 'gemini-product-autocomplete' ); ?></p>
-                            </td>
-                        </tr>
-                        <tr valign="top">
-                            <th scope="row"><?php esc_html_e( 'SEO Optimization', 'gemini-product-autocomplete' ); ?></th>
-                            <td>
-                                 <label><input type="checkbox" disabled> <?php esc_html_e('Generate Meta Title & Description (Yoast/RankMath support)', 'gemini-product-autocomplete'); ?></label>
-                            </td>
-                        </tr>
-                         <tr valign="top">
-                            <th scope="row"><?php esc_html_e( 'Bulk Generation', 'gemini-product-autocomplete' ); ?></th>
-                            <td>
-                                 <label><input type="checkbox" disabled> <?php esc_html_e('Enable Bulk Actions for Product List', 'gemini-product-autocomplete'); ?></label>
-                                 <p class="description"><?php esc_html_e( 'Generate content for 100+ products in one click.', 'gemini-product-autocomplete' ); ?></p>
-                            </td>
-                        </tr>
-                        <tr valign="top">
-                            <th scope="row"><?php esc_html_e( 'Save as Attributes', 'gemini-product-autocomplete' ); ?></th>
-                            <td>
-                                 <label><input type="checkbox" disabled> <?php esc_html_e('Save features as real WooCommerce attributes for filtering', 'gemini-product-autocomplete'); ?></label>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                <div style="background: #f0f0f1; padding: 15px; border-left: 4px solid #72aee6; margin-top: 10px;">
-                    <p style="margin: 0;"><strong><?php esc_html_e('Want these features?', 'gemini-product-autocomplete'); ?></strong> <a href="https://checkout.freemius.com/plugin/23001/plan/38599/" target="_blank" style="font-weight: bold;"><?php esc_html_e('Upgrade to PRO Version', 'gemini-product-autocomplete'); ?></a></p>
-                </div>
-            
-            <?php do_settings_sections( 'gpa_settings_page' ); ?>
+            <?php do_settings_sections( 'ildesc_settings_page' ); ?>
+            <hr class="ildesc-separator">
+            <div class="ildesc-pro-banner">
+                <h3 class="ildesc-pro-banner-title">
+                    <span class="dashicons dashicons-star-filled ildesc-pro-icon"></span>
+                    <?php esc_html_e( 'Unlock Advanced Features with IntelliDesc PRO', 'intellidesc-for-woocommerce' ); ?>
+                </h3>
+                <p><?php esc_html_e( 'Take your store automation to the next level. The PRO version includes:', 'intellidesc-for-woocommerce' ); ?></p>
+                
+                <ul class="ildesc-pro-list">
+                    <li><strong><?php esc_html_e( 'Native WooCommerce Attributes:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Save generated features as real, filterable global attributes.', 'intellidesc-for-woocommerce' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Bulk Generation Mode:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Process 50+ products at once with our Smart Queue system (no server timeouts).', 'intellidesc-for-woocommerce' ); ?></li>
+                    <li><strong><?php esc_html_e( 'SEO Meta Optimization:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Automatically generate Yoast/RankMath Meta Titles and Descriptions.', 'intellidesc-for-woocommerce' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Tone of Voice & Presets:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Customize the AI personality and use presets for Fashion, Tech, or Automotive niches.', 'intellidesc-for-woocommerce' ); ?></li>
+                </ul>
+
+                <a href="https://checkout.freemius.com/plugin/23001/plan/38599/" target="_blank" class="button button-primary">
+                    <?php esc_html_e( 'Upgrade to PRO Version', 'intellidesc-for-woocommerce' ); ?>
+                </a>
+            </div>
             <?php submit_button(); ?>
         </form>
     </div>

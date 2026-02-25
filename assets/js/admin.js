@@ -3,44 +3,46 @@ jQuery(document).ready(function($) {
     // ==========================================
     // 1. SINGLE PRODUCT GENERATION
     // ==========================================
-    $(document).on('click', '#gpa-trigger-btn, #gpa-autocomplete-btn', function(e) {
+    $(document).on('click', '#ildesc-trigger-btn, #ildesc-autocomplete-btn', function(e) {
         e.preventDefault();
         
         var $btn = $(this);
-        var $status = $('#gpa-status-message'); 
-        var $messageSpan = $('#gpa-message'); // Fallback if meta box is different
+        var $status = $('#ildesc-status-message'); 
+        var $messageSpan = $('#ildesc-message'); // Fallback if meta box is different
         
         var $output = $status.length ? $status : $messageSpan;
 
         var productId = $('#post_ID').val();
         var productTitle = $('#title').val(); 
-        var seoKeyword = $('#gpa-seo-keyword').val(); // Undefined in Free, which is fine
+        var seoKeyword = $('#ildesc-seo-keyword').val(); // Undefined in Free, which is fine
         
         if (!productTitle) {
-            alert(gpa_params.no_title); 
+            alert(ildesc_params.no_title); 
             return;
         }
 
-        $btn.prop('disabled', true).text(gpa_params.btn_loading); 
-        $output.removeClass('notice-error notice-success').html(gpa_params.loading_text); 
+        $btn.prop('disabled', true).text(ildesc_params.btn_loading); 
+        $output.removeClass('notice-error notice-success').html(ildesc_params.loading_text); 
 
         $.ajax({
-            url: gpa_params.ajax_url,
+            url: ildesc_params.ajax_url,
             type: 'POST',
             dataType: 'json',
             data: {
-                action: 'gpa_autocomplete_features',
+                action: 'ildesc_autocomplete_features',
                 product_id: productId,
                 product_title: productTitle,
                 seo_keyword: seoKeyword, // In Free this sends undefined/empty, which is safe
-                nonce: gpa_params.nonce
+                nonce: ildesc_params.nonce
             },
             success: function(response) {
                 if (response.success) {
-                    var msg = '<span style="color:green;">' + gpa_params.status_success + '</span>';
+                    var msg = '<span class="ildesc-text-success">' + ildesc_params.status_success + '</span>';
+
                     if(response.data.message) {
                         msg += ' (' + response.data.message + ')';
                     }
+
                     $output.addClass('notice-success').html(msg);
                     
                     // Update Short Description
@@ -63,15 +65,15 @@ jQuery(document).ready(function($) {
                     }
                     
                     // Update Features Table
-                    if (response.data.features && $('.gpa-features-wrap').length) {
-                        var $wrap = $('.gpa-features-wrap');
+                    if (response.data.features && $('.ildesc-features-wrap').length) {
+                        var $wrap = $('.ildesc-features-wrap');
                         $wrap.empty();
                         response.data.features.forEach(function(feat, index) {
                             $wrap.append(
-                                '<tr class="gpa-feature-row">' +
-                                '<td><input type="text" class="gpa-input-wide" name="gpa_feature[' + index + '][name]" value="' + feat.name + '"></td>' +
-                                '<td><input type="text" class="gpa-input-wide" name="gpa_feature[' + index + '][value]" value="' + feat.value + '"></td>' +
-                                '<td><button type="button" class="button gpa-remove-feature">Remove</button></td>' +
+                                '<tr class="ildesc-feature-row">' +
+                                '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][name]" value="' + feat.name + '"></td>' +
+                                '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][value]" value="' + feat.value + '"></td>' +
+                                '<td><button type="button" class="button ildesc-remove-feature">Remove</button></td>' +
                                 '</tr>'
                             );
                         });
@@ -79,7 +81,7 @@ jQuery(document).ready(function($) {
 
                     // Reload if Attributes were saved (Logic mostly for Pro, but safe to keep)
                     if (response.data.reload_required) {
-                        msg += '<span style="color:green;">' + gpa_params.status_success + '</span>';
+                        msg += '<br><span class="ildesc-text-success">' + ildesc_params.status_success + '</span>';
                         msg += ' <strong>' + response.data.attr_msg + '</strong>';
                         $output.addClass('notice-success').html(msg);
                         
@@ -92,14 +94,14 @@ jQuery(document).ready(function($) {
                         return;
                     }
                 } else {
-                    $output.addClass('notice-error').html('<span style="color:red;">' + gpa_params.status_error + (response.data.message || 'Unknown') + '</span>');
+                    $output.addClass('notice-error').html('<span class="ildesc-text-error">' + ildesc_params.status_error + (response.data.message || 'Unknown') + '</span>');
                 }
             },
             error: function(xhr, status, error) {
-                $output.html('<span style="color:red;">' + gpa_params.server_error + ' ' + error + '</span>');
+                $output.html('<span class="ildesc-text-error">' + ildesc_params.server_error + ' ' + error + '</span>');
             },
             complete: function() {
-                $btn.prop('disabled', false).text(gpa_params.btn_default); 
+                $btn.prop('disabled', false).text(ildesc_params.btn_default); 
             }
         });
     });
@@ -109,25 +111,25 @@ jQuery(document).ready(function($) {
     // ==========================================
     
     // Remove Feature Row
-    $(document).on('click', '.gpa-remove-feature', function() {
-        $(this).closest('.gpa-feature-row').remove();
+    $(document).on('click', '.ildesc-remove-feature', function() {
+        $(this).closest('.ildesc-feature-row').remove();
     });
     
     // Add Feature Row
-    $(document).on('click', '#gpa-add-feature', function() {
-         var index = $('.gpa-feature-row').length; 
-         var newRow = '<tr class="gpa-feature-row">' +
-            '<td><input type="text" class="gpa-input-wide" name="gpa_feature[' + index + '][name]" placeholder="Name"></td>' +
-            '<td><input type="text" class="gpa-input-wide" name="gpa_feature[' + index + '][value]" placeholder="Value"></td>' +
-            '<td><button type="button" class="button gpa-remove-feature">Remove</button></td>' +
+    $(document).on('click', '#ildesc-add-feature', function() {
+         var index = $('.ildesc-feature-row').length; 
+         var newRow = '<tr class="ildesc-feature-row">' +
+            '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][name]" placeholder="Name"></td>' +
+            '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][value]" placeholder="Value"></td>' +
+            '<td><button type="button" class="button ildesc-remove-feature">Remove</button></td>' +
             '</tr>';
-        $('.gpa-features-wrap').append(newRow);
+        $('.ildesc-features-wrap').append(newRow);
     });
 
     // Clear Excerpt (Button from Free version)
-    $('#gpa-clear-excerpt').on('click', function(e) {
+    $('#ildesc-clear-excerpt').on('click', function(e) {
         e.preventDefault();
-        var confirmText = gpa_params.confirm_clear || 'Are you sure?';
+        var confirmText = ildesc_params.confirm_clear || 'Are you sure?';
         if (confirm(confirmText)) {
             if (typeof tinymce !== 'undefined' && tinymce.get('excerpt')) {
                 tinymce.get('excerpt').setContent('');
@@ -135,5 +137,35 @@ jQuery(document).ready(function($) {
                 $('#excerpt').val('');
             }
         }
+    });
+
+
+    // ==========================================
+    // 3. TEMPLATES SETTINGS (Admin Page)
+    // ==========================================
+    $('#ildesc-add-template').on('click', function() {
+        var $table = $('#ildesc-templates-table');
+        if (!$table.length) return;
+        
+        var templateIndex = parseInt($table.attr('data-index'), 10);
+        var categoryOptionsRaw = $table.attr('data-options');
+        var categoryOptions = categoryOptionsRaw ? JSON.parse(categoryOptionsRaw) : '';
+        
+        var newRow = '<tr class="ildesc-template-row"><td>' +
+            '<select name="ildesc_category_templates[' + templateIndex + '][category_id]" class="ildesc-input-wide">' + 
+            categoryOptions + 
+            '</select>' +
+            '</td><td>' +
+            '<input type="text" name="ildesc_category_templates[' + templateIndex + '][features]" class="ildesc-input-wide">' +
+            '</td><td>' +
+            '<button type="button" class="button ildesc-remove-template">Remove</button>' +
+            '</td></tr>';
+            
+        $table.find('tbody').append(newRow);
+        $table.attr('data-index', templateIndex + 1);
+    });
+    
+    $(document).on('click', '.ildesc-remove-template', function() {
+        $(this).closest('tr').remove();
     });
 });
