@@ -21,6 +21,23 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        var currentExcerpt = getEditorText('excerpt');
+        var currentContent = getEditorText('content');
+
+        var uiProductType = $('#product-type').val() || 'simple';
+        var uiIsVirtual = $('#_virtual').is(':checked') ? 1 : 0;
+        var uiIsDownloadable = $('#_downloadable').is(':checked') ? 1 : 0;
+
+        // Get existing features
+        var existingFeatures = [];
+        $('.ildesc-feature-row').each(function() {
+            var fName = $(this).find('input[name*="[name]"]').val().trim();
+            var fVal = $(this).find('input[name*="[value]"]').val().trim();
+            if (fName || fVal) {
+                existingFeatures.push(fName + ': ' + fVal);
+            }
+        });
+
         $btn.prop('disabled', true).text(ildesc_params.btn_loading); 
         $output.removeClass('notice-error notice-success').html(ildesc_params.loading_text); 
 
@@ -33,6 +50,12 @@ jQuery(document).ready(function($) {
                 product_id: productId,
                 product_title: productTitle,
                 seo_keyword: seoKeyword, // In Free this sends undefined/empty, which is safe
+                current_excerpt: currentExcerpt,
+                current_content: currentContent,
+                existing_features: existingFeatures.join(' | '),
+                product_type_ui: uiProductType,
+                is_virtual_ui: uiIsVirtual,
+                is_downloadable_ui: uiIsDownloadable,
                 nonce: ildesc_params.nonce
             },
             success: function(response) {
@@ -139,6 +162,17 @@ jQuery(document).ready(function($) {
         }
     });
 
+    /**
+     * Helper to read plain text from WP Editor (TinyMCE or plain textarea)
+     */
+    function getEditorText(id) {
+        if (typeof tinymce !== 'undefined' && tinymce.get(id) && !tinymce.get(id).isHidden()) {
+            return tinymce.get(id).getContent({format: 'text'}).trim(); 
+        } else if ($('#' + id).length) {
+            return $('#' + id).val().trim();
+        }
+        return '';
+    }
 
     // ==========================================
     // 3. TEMPLATES SETTINGS (Admin Page)

@@ -46,6 +46,41 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
         return new WP_Error('api_key', __('Gemini API Key is missing.', 'intellidesc-for-woocommerce'));
     }
 
+    // GET PRODUCT TYPE
+    $product = wc_get_product($product_id);
+    if (!$product) return new WP_Error('not_found', 'Product not found.');
+    
+    $product_type = $product->get_type();
+    $is_virtual = $product->is_virtual();
+    $is_downloadable = $product->is_downloadable();
+
+    if ( isset($_POST['product_type_ui']) ) {
+        $product_type = sanitize_text_field(wp_unslash($_POST['product_type_ui']));
+    }
+    
+    if ( isset($_POST['is_virtual_ui']) ) {
+        $is_virtual = !empty($_POST['is_virtual_ui']);
+    }
+
+    if ( isset($_POST['is_downloadable_ui']) ) {
+        $is_downloadable = !empty($_POST['is_downloadable_ui']);
+    }
+
+    $context_excerpt  = isset($_POST['current_excerpt']) ? sanitize_textarea_field(wp_unslash($_POST['current_excerpt'])) : '';
+    $context_content  = isset($_POST['current_content']) ? sanitize_textarea_field(wp_unslash($_POST['current_content'])) : '';
+    $context_features = isset($_POST['existing_features']) ? sanitize_text_field(wp_unslash($_POST['existing_features'])) : '';
+
+    $user_constraints_prompt = "";
+    if (!empty($context_features) || !empty($context_excerpt)) {
+        $user_constraints_prompt = "
+        USER CONSTRAINTS (CRITICAL):
+        The user has already provided some details about this specific item in their inventory. YOU MUST NOT CONTRADICT THIS DATA.
+        If the user specifies a color, size, memory variant, or specific material, ONLY mention those variants. Do NOT list other variations found on the internet.
+        - User's predefined specs: {$context_features}
+        - User's notes (Short Desc): " . mb_substr($context_excerpt, 0, 300) . "
+        ";
+    }
+
     // 2. Language Setup
     $selected_lang = get_option(ILDESC_CONTENT_LANGUAGE, 'default');
     $target_language = ($selected_lang === 'default') ? substr(get_locale(), 0, 2) : $selected_lang;
@@ -101,6 +136,18 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
        - BAD Name: 'Ice Force (Cryogenic hardening)'
        - GOOD Name: 'Technology' -> Value: 'Ice Force'";
 
+    // G. CHOOSE PRODUCT TYPE.
+
+    $product_type_context = "PRODUCT TYPE: Standard physical item.";
+    
+    if ($product_type === 'variable') {
+        $product_type_context = "PRODUCT TYPE: Variable product (e.g. clothing in different sizes/colors). IMPORTANT: For 'Features', you MUST include likely variation attributes. For example, add {'Name': 'Available Colors', 'Value': 'Red, Blue, Black'} or {'Name': 'Sizes', 'Value': 'S, M, L, XL'}.";
+    } elseif ($is_downloadable) {
+        $product_type_context = "PRODUCT TYPE: Digital Download (e.g. eBook, software, audio). IMPORTANT: Do NOT generate physical dimensions or materials. Focus 'Features' on digital specs like File Format, File Size, Number of Pages, Duration, or Resolution.";
+    } elseif ($is_virtual) {
+        $product_type_context = "PRODUCT TYPE: Virtual Service or Membership. IMPORTANT: Focus 'Features' on service details, duration, access type, or support terms. No physical specs.";
+    }
+
     // ---------------------------------------------------------
     // 4. CONSTRUCT FINAL JSON & SYSTEM INSTRUCTION
     // ---------------------------------------------------------
@@ -109,7 +156,9 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
 
     $base_instruction = "Act as an E-commerce Assistant. Analyze the product: \"{$product_title}\". 
     
+    {$user_constraints_prompt}
     {$tone_instruction}
+    {$product_type_context}
     {$preset_context}
     
     {$seo_prompt_part}
