@@ -69,16 +69,23 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     $context_excerpt  = isset($_POST['current_excerpt']) ? sanitize_textarea_field(wp_unslash($_POST['current_excerpt'])) : '';
     $context_content  = isset($_POST['current_content']) ? sanitize_textarea_field(wp_unslash($_POST['current_content'])) : '';
     $context_features = isset($_POST['existing_features']) ? sanitize_text_field(wp_unslash($_POST['existing_features'])) : '';
-
+    $all_context_features = array_filter( [ $context_features, $native_features_str ] );
+    $combined_features_context = implode( ' | ', $all_context_features );
+    
     $user_constraints_prompt = "";
-    if (!empty($context_features) || !empty($context_excerpt)) {
+    if (!empty($combined_features_context) || !empty($context_excerpt)) {
         $user_constraints_prompt = "
-        USER CONSTRAINTS (CRITICAL):
-        The user has already provided some details about this specific item in their inventory. YOU MUST NOT CONTRADICT THIS DATA.
-        If the user specifies a color, size, memory variant, or specific material, ONLY mention those variants. Do NOT list other variations found on the internet.
-        - User's predefined specs: {$context_features}
-        - User's notes (Short Desc): " . mb_substr($context_excerpt, 0, 300) . "
-        ";
+        =========================================
+        CRITICAL INVENTORY CONSTRAINTS (STRICT):
+        The seller has explicitly defined EXACTLY what is currently in stock in their warehouse. 
+        PREDEFINED DATA: [ {$combined_features_context} ]
+        
+        1. If a property (e.g., Size, Color, Storage) is mentioned in the PREDEFINED DATA, you MUST output ONLY the exact values provided.
+        2. ABSOLUTELY DO NOT add other sizes or colors found online. If the predefined data says 'Size: M', you must output ONLY 'M'. Do not add 'S', 'L', or 'XL'.
+        3. Treat PREDEFINED DATA as the absolute truth for this specific store.
+        - User's notes: " . mb_substr($context_excerpt, 0, 300) . "
+        =========================================
+            ";
     }
 
     // 2. Language Setup
