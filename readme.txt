@@ -84,6 +84,14 @@ The plugin uses Google Search grounding to find real specs. However, AI can occa
 
 == Changelog ==
 
+= 1.4.0 =
+* New: Smart Product Type Detection! The AI now understands whether you are editing a Simple, Variable, Virtual, or Downloadable product, and automatically adjusts its generation logic (e.g., focusing on digital specs for downloadable items or generating variation attributes for variable products).
+* New: Context-Aware AI Generation. The plugin now reads the features and attributes you've already entered manually before sending the request. The AI strictly respects your inventory constraints and will no longer hallucinate extra sizes or colors that you don't actually sell!
+* Pro: Advanced Native Attributes Integration. AI-generated features are now perfectly saved as real, filterable WooCommerce global attributes. 
+* Pro: Variable Products Automation. When saving real attributes for Variable products, the plugin now automatically checks the "Used for variations" box, making it incredibly fast to generate variations straight from AI output.
+* Improved: Highly optimized prompt constraints for Gemini to prevent redundant data generation and improve factual accuracy.
+* Improved: Significant code refactoring, unified prefixes, and removal of inline scripts for better performance, security, and strict compliance with WordPress.org coding standards.
+
 = 1.3.0 =
 * Important: Plugin renamed to IntelliDesc for WooCommerce.
 * Improved: Better compliance with WordPress trademark guidelines.
