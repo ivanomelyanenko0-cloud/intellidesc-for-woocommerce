@@ -25,7 +25,7 @@ function ildesc_handle_autocomplete_features() {
     }
 
     // Call the core generation logic
-    $result = ildesc_generate_content_for_product($product_id, $product_title, true);
+    $result = ildesc_generate_content_for_product($product_id, $product_title);
 
     if (is_wp_error($result)) {
         wp_send_json_error(array('message' => $result->get_error_message()));
@@ -38,7 +38,7 @@ function ildesc_handle_autocomplete_features() {
  * Core Generation Logic
  * Can be used by AJAX (Single) or Bulk Loop (Pro)
  */
-function ildesc_generate_content_for_product($product_id, $product_title, $seo_keyword = '', $is_ajax = false) {
+function ildesc_generate_content_for_product($product_id, $product_title) {
     
     // 1. Basic Checks
     $api_key = get_option(ILDESC_SETTINGS_KEY);
@@ -67,19 +67,16 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     }
 
     $context_excerpt  = isset($_POST['current_excerpt']) ? sanitize_textarea_field(wp_unslash($_POST['current_excerpt'])) : '';
-    $context_content  = isset($_POST['current_content']) ? sanitize_textarea_field(wp_unslash($_POST['current_content'])) : '';
     $context_features = isset($_POST['existing_features']) ? sanitize_text_field(wp_unslash($_POST['existing_features'])) : '';
-    $all_context_features = array_filter( [ $context_features, $native_features_str ] );
-    $combined_features_context = implode( ' | ', $all_context_features );
-    
+
     $user_constraints_prompt = "";
-    if (!empty($combined_features_context) || !empty($context_excerpt)) {
+    if (!empty($context_features) || !empty($context_excerpt)) {
         $user_constraints_prompt = "
         =========================================
         CRITICAL INVENTORY CONSTRAINTS (STRICT):
-        The seller has explicitly defined EXACTLY what is currently in stock in their warehouse. 
-        PREDEFINED DATA: [ {$combined_features_context} ]
-        
+        The seller has explicitly defined EXACTLY what is currently in stock in their warehouse.
+        PREDEFINED DATA: [ {$context_features} ]
+
         1. If a property (e.g., Size, Color, Storage) is mentioned in the PREDEFINED DATA, you MUST output ONLY the exact values provided.
         2. ABSOLUTELY DO NOT add other sizes or colors found online. If the predefined data says 'Size: M', you must output ONLY 'M'. Do not add 'S', 'L', or 'XL'.
         3. Treat PREDEFINED DATA as the absolute truth for this specific store.
@@ -106,10 +103,7 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     // Default (Free): Neutral / Informative
     $tone_instruction = "Tone: Informative, professional, neutral. Avoid marketing fluff.";
 
-    // C. SEO INSTRUCTIONS
-    $seo_prompt_part = "";
-
-    // D. DESCRIPTION FORMATTING
+    // C. DESCRIPTION FORMATTING
     // Default (Free): Simple Text, No HTML, Standard Length
     $desc_prompt_part = "Create a universal, factual 'Long_Description' (2 paragraphs). Keep it generic and safe. NO HTML tags, just plain text.";
     
@@ -132,8 +126,22 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
         }
     }
 
-    // F. PRESETS & FORMATTING RULES
-    $preset_context = "NICHE CONTEXT: General E-commerce product.";
+    // D. UNIT RULES
+    $units_prompt_part = '';
+    $unit_rules = get_option( ILDESC_UNIT_RULES, [] );
+    if ( ! empty( $unit_rules ) && is_array( $unit_rules ) ) {
+        $unit_lines = [];
+        foreach ( $unit_rules as $rule ) {
+            if ( ! empty( $rule['feature'] ) && ! empty( $rule['unit'] ) ) {
+                $unit_lines[] = '- "' . $rule['feature'] . '": output value ONLY in "' . $rule['unit'] . '"';
+            }
+        }
+        if ( ! empty( $unit_lines ) ) {
+            $units_prompt_part = "UNITS & FORMAT (STRICT — override defaults):\n" . implode( "\n", $unit_lines );
+        }
+    }
+
+    // E. FORMATTING RULES
     $formatting_rules = "DATA CLEANING RULES (CRITICAL):
     1. Feature Values must be SHORT and CONCISE.
        - BAD: 'MediaTek Helio G99 (6 nm) Octa-core (2x2.2 GHz...)'
@@ -166,9 +174,7 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     {$user_constraints_prompt}
     {$tone_instruction}
     {$product_type_context}
-    {$preset_context}
-    
-    {$seo_prompt_part}
+
     {$desc_prompt_part}
     
     {$language_instruction}
@@ -184,7 +190,7 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
        Technical Data Rules:
        - Values must be PRECISE and FACTUAL.
        - USE GOOGLE SEARCH TOOL.
-       
+       {$units_prompt_part}
        {$formatting_rules}
        
        - DO NOT use generic descriptors like 'High res'. Use NUMBERS.
@@ -212,18 +218,49 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     ));
 
     if (is_wp_error($response)) {
-        return new WP_Error('api_error', 'WP Error: ' . $response->get_error_message());
+        return new WP_Error('api_error', __('Connection failed: ', 'intellidesc-for-woocommerce') . $response->get_error_message());
     }
 
     // ---------------------------------------------------------
-    // 6. JSON PARSING & DATA EXTRACTION
+    // 6. HTTP STATUS & JSON PARSING
     // ---------------------------------------------------------
-    
+
+    $http_code    = wp_remote_retrieve_response_code($response);
     $response_body = wp_remote_retrieve_body($response);
+
+    if ($http_code !== 200) {
+        $error_data  = json_decode($response_body, true);
+        $api_details = isset($error_data['error']['message']) ? ' — ' . $error_data['error']['message'] : '';
+
+        $status_messages = [
+            400 => __('Bad request. The product title or prompt contains invalid characters.', 'intellidesc-for-woocommerce'),
+            401 => __('Invalid API key. Go to WooCommerce → IntelliDesc and check your Gemini API key.', 'intellidesc-for-woocommerce'),
+            403 => __('Access denied. Your API key does not have permission to use this model. Check billing in Google AI Studio.', 'intellidesc-for-woocommerce'),
+            404 => __('Model not found. The Gemini model may have been renamed or removed. Contact plugin support.', 'intellidesc-for-woocommerce'),
+            429 => __('Rate limit exceeded. You have hit the free tier limit (5–15 requests/min). Wait 60 seconds and try again.', 'intellidesc-for-woocommerce'),
+            500 => __('Gemini API internal error. This is on Google\'s side — try again in a few moments.', 'intellidesc-for-woocommerce'),
+            503 => __('Gemini API is temporarily unavailable (overloaded or maintenance). Try again later.', 'intellidesc-for-woocommerce'),
+        ];
+
+        $message = isset($status_messages[$http_code])
+            ? $status_messages[$http_code]
+            /* translators: %d: HTTP status code */
+            : sprintf(__('Gemini API returned an unexpected error (HTTP %d).', 'intellidesc-for-woocommerce'), $http_code);
+
+        return new WP_Error('api_http_' . $http_code, $message . $api_details);
+    }
+
     $data = json_decode($response_body, true);
-    
+
     if (!isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-         return new WP_Error('api_error', 'Invalid API response structure. Check quota.');
+        $finish_reason = $data['candidates'][0]['finishReason'] ?? '';
+        if ($finish_reason === 'SAFETY') {
+            return new WP_Error('api_safety', __('Gemini blocked the response due to safety filters. Try rephrasing the product title.', 'intellidesc-for-woocommerce'));
+        }
+        if ($finish_reason === 'RECITATION') {
+            return new WP_Error('api_recitation', __('Gemini blocked the response due to recitation policy. Try a more specific product title.', 'intellidesc-for-woocommerce'));
+        }
+        return new WP_Error('api_error', __('Unexpected API response structure. Check your quota at Google AI Studio.', 'intellidesc-for-woocommerce'));
     }
 
     $raw_text = $data['candidates'][0]['content']['parts'][0]['text'];
@@ -250,9 +287,6 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     // ---------------------------------------------------------
     // 7. SAVING DATA
     // ---------------------------------------------------------
-
-    $product = wc_get_product($product_id);
-    if (!$product) return new WP_Error('not_found', 'Product not found.');
 
     $overwrite = get_option( ILDESC_OVERWRITE_DATA, 0 );
 
@@ -290,16 +324,12 @@ function ildesc_generate_content_for_product($product_id, $product_title, $seo_k
     
     $product->save();
 
-    $reload_required = false;
-
     return [
-        'success' => true,
-        'message' => __('Content generated successfully!', 'intellidesc-for-woocommerce'),
+        'success'           => true,
+        'message'           => __('Content generated successfully!', 'intellidesc-for-woocommerce'),
         'short_description' => $features_json['Short_Description'] ?? '',
-        'long_description' => $features_json['Long_Description'] ?? '',
-        'smm_post' => $features_json['Social_Media_Post'] ?? '', 
-        'features' => $editable_features,
-        'reload_required' => $reload_required,
-        'attr_msg' => __('Attributes created. Reloading...', 'intellidesc-for-woocommerce')
+        'long_description'  => $features_json['Long_Description'] ?? '',
+        'features'          => $editable_features,
+        'reload_required'   => false,
     ];
 }

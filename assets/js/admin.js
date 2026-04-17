@@ -202,4 +202,30 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.ildesc-remove-template', function() {
         $(this).closest('tr').remove();
     });
+
+    // ==========================================
+    // 4. UNIT RULES (Admin Page)
+    // ==========================================
+    $('#ildesc-add-unit-rule').on('click', function() {
+        var $table = $('#ildesc-unit-rules-table');
+        if (!$table.length) return;
+
+        var index = parseInt($table.attr('data-index'), 10);
+        var optName = 'ildesc_unit_rules';
+
+        var newRow = '<tr class="ildesc-unit-rule-row"><td>' +
+            '<input type="text" class="ildesc-input-wide" name="' + optName + '[' + index + '][feature]" placeholder="e.g. Battery Capacity">' +
+            '</td><td>' +
+            '<input type="text" class="ildesc-input-wide" name="' + optName + '[' + index + '][unit]" placeholder="e.g. mAh">' +
+            '</td><td>' +
+            '<button type="button" class="button ildesc-remove-unit-rule">Remove</button>' +
+            '</td></tr>';
+
+        $table.find('tbody').append(newRow);
+        $table.attr('data-index', index + 1);
+    });
+
+    $(document).on('click', '.ildesc-remove-unit-rule', function() {
+        $(this).closest('tr').remove();
+    });
 });

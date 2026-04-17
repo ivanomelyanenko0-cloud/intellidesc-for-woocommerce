@@ -5,14 +5,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'ILDESC_CATEGORY_TEMPLATES', 'ildesc_category_templates' );
-define( 'ILDESC_CONTENT_LANGUAGE', 'ildesc_content_language' );
-
-// Pro Constants
-define( 'ILDESC_SELECTED_MODEL', 'ildesc_selected_model' );
-define( 'ILDESC_LICENSE_KEY', 'ildesc_license_key' );
-define( 'ILDESC_LICENSE_STATUS', 'ildesc_license_status' );
-
 function ildesc_register_settings() {
     $option_group = 'ildesc_settings_group';
     $page_slug    = 'ildesc_settings_page';
@@ -37,20 +29,38 @@ function ildesc_register_settings() {
         )
     );
 
-    // 3. Sections
+    // Unit Rules
+    register_setting( $option_group, ILDESC_UNIT_RULES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_unit_rules') );
+
+    // Sections
     add_settings_section(
         'ildesc_templates_section',
         esc_html__( 'Feature Templates Settings', 'intellidesc-for-woocommerce' ),
         'ildesc_templates_section_callback',
-        $page_slug 
+        $page_slug
     );
-    
+
     add_settings_field(
         'ildesc_category_template_fields',
         esc_html__( 'Templates by Category', 'intellidesc-for-woocommerce' ),
         'ildesc_category_template_fields_callback',
         $page_slug,
         'ildesc_templates_section'
+    );
+
+    add_settings_section(
+        'ildesc_unit_rules_section',
+        esc_html__( 'Unit Rules', 'intellidesc-for-woocommerce' ),
+        'ildesc_unit_rules_section_callback',
+        $page_slug
+    );
+
+    add_settings_field(
+        'ildesc_unit_rules_fields',
+        esc_html__( 'Feature Units', 'intellidesc-for-woocommerce' ),
+        'ildesc_unit_rules_fields_callback',
+        $page_slug,
+        'ildesc_unit_rules_section'
     );
 }
 add_action( 'admin_init', 'ildesc_register_settings' );
@@ -72,8 +82,79 @@ function ildesc_sanitize_category_templates( $input ) {
     return $sanitized;
 }
 
+function ildesc_sanitize_unit_rules( $input ) {
+    if ( empty( $input ) || ! is_array( $input ) ) {
+        return [];
+    }
+    $sanitized = [];
+    foreach ( $input as $item ) {
+        $feature = sanitize_text_field( $item['feature'] ?? '' );
+        $unit    = sanitize_text_field( $item['unit'] ?? '' );
+        if ( ! empty( $feature ) && ! empty( $unit ) ) {
+            $sanitized[] = [ 'feature' => $feature, 'unit' => $unit ];
+        }
+    }
+    return $sanitized;
+}
+
 function ildesc_templates_section_callback() {
     echo '<p>' . esc_html__( 'Define mandatory features that Gemini should look for specific WooCommerce categories.', 'intellidesc-for-woocommerce' ) . '</p>';
+}
+
+function ildesc_unit_rules_section_callback() {
+    echo '<p>' . esc_html__( 'Define the exact unit or format Gemini must use when outputting specific feature values. For example: "Battery Capacity" → "mAh" will force Gemini to always output battery values as "5000 mAh".', 'intellidesc-for-woocommerce' ) . '</p>';
+}
+
+function ildesc_unit_rules_fields_callback() {
+    $rules = get_option( ILDESC_UNIT_RULES, [] );
+    if ( ! is_array( $rules ) ) {
+        $rules = [];
+    }
+    ?>
+    <input type="hidden" name="<?php echo esc_attr( ILDESC_UNIT_RULES ); ?>" value="" />
+
+    <table id="ildesc-unit-rules-table" class="widefat striped ildesc-table-layout" data-index="<?php echo intval( count( $rules ) + 100 ); ?>">
+        <thead>
+            <tr>
+                <th class="ildesc-col-name"><?php esc_html_e( 'Feature Name', 'intellidesc-for-woocommerce' ); ?></th>
+                <th><?php esc_html_e( 'Unit / Format', 'intellidesc-for-woocommerce' ); ?></th>
+                <th class="ildesc-col-action"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ( $rules as $index => $rule ) : ?>
+                <tr class="ildesc-unit-rule-row">
+                    <td>
+                        <input type="text"
+                               class="ildesc-input-wide"
+                               name="<?php echo esc_attr( ILDESC_UNIT_RULES ); ?>[<?php echo esc_attr( $index ); ?>][feature]"
+                               value="<?php echo esc_attr( $rule['feature'] ); ?>"
+                               placeholder="<?php esc_attr_e( 'e.g. Battery Capacity', 'intellidesc-for-woocommerce' ); ?>">
+                    </td>
+                    <td>
+                        <input type="text"
+                               class="ildesc-input-wide"
+                               name="<?php echo esc_attr( ILDESC_UNIT_RULES ); ?>[<?php echo esc_attr( $index ); ?>][unit]"
+                               value="<?php echo esc_attr( $rule['unit'] ); ?>"
+                               placeholder="<?php esc_attr_e( 'e.g. mAh', 'intellidesc-for-woocommerce' ); ?>">
+                    </td>
+                    <td>
+                        <button type="button" class="button ildesc-remove-unit-rule"><?php esc_html_e( 'Remove', 'intellidesc-for-woocommerce' ); ?></button>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">
+                    <button type="button" id="ildesc-add-unit-rule" class="button button-secondary">
+                        <?php esc_html_e( 'Add Unit Rule', 'intellidesc-for-woocommerce' ); ?>
+                    </button>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    <?php
 }
 
 function ildesc_category_template_fields_callback() {

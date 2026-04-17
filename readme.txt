@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, gemini, product-description, seo
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 1.3.0
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -31,6 +31,7 @@ This service is provided by Google LLC.
 * **Intelligent Descriptions:** Generates a concise Short Description and a detailed Long Description.
 * **One-Click Generation:** Just enter a product title (e.g., "Samsung Galaxy S24") and click Generate.
 * **Category Templates:** Define mandatory features for specific categories (e.g., ensure all "Laptops" have "RAM" and "CPU" fields).
+* **Unit Rules:** Define the exact unit Gemini must use for specific features (e.g., force "Battery Capacity" to always output in "mAh").
 * **Clean Data:** AI is trained to remove marketing fluff from specs (e.g., cleans "2.2 GHz Octa-core" to just "Helio G99").
 * **Multi-language Support:** Works in English, Ukrainian, Polish, German, Spanish, French, and many more.
 
@@ -71,7 +72,7 @@ Upgrade to Pro for advanced workflow automation and deeper WooCommerce integrati
 == Frequently Asked Questions ==
 
 = Is the API free? =
-Yes! Google currently offers a generous free tier for the Gemini Flash models (approx. 15 requests/minute), which is sufficient for most stores. Heavy usage may require a paid plan directly from Google.
+Yes! Google currently offers a generous free tier for the Gemini Flash models (5–15 requests/minute depending on the model version), which is sufficient for most stores. Heavy usage may require a paid plan directly from Google.
 
 = Does it support variable products? =
 It generates descriptions and attributes for the parent product. You can then use the generated attributes (in the Pro version) to create variations.
@@ -83,6 +84,14 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 The plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 == Changelog ==
+
+= 1.5.0 =
+* New: Unit Rules. Define the exact unit or format Gemini must use for specific feature values (e.g., "Battery Capacity" → always in "mAh"). Configurable per-store in WooCommerce → IntelliDesc settings.
+* Improved: Detailed error messages for all Gemini API failure codes (401, 403, 404, 429, 500, 503) with actionable hints displayed directly in the product editor.
+* Improved: Gemini safety filter blocks (SAFETY, RECITATION finish reasons) are now caught and reported with a clear message instead of a generic error.
+* Fixed: Undefined variable `$native_features_str` causing a PHP notice on every generation request.
+* Fixed: Duplicate constant definitions for `ILDESC_CATEGORY_TEMPLATES` and `ILDESC_CONTENT_LANGUAGE`.
+* Fixed: `wc_get_product()` was called twice per request (redundant database query removed).
 
 = 1.4.0 =
 * New: Smart Product Type Detection! The AI now understands whether you are editing a Simple, Variable, Virtual, or Downloadable product, and automatically adjusts its generation logic (e.g., focusing on digital specs for downloadable items or generating variation attributes for variable products).

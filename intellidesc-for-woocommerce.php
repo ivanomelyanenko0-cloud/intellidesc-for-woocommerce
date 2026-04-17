@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.4.0
+ * Version:           1.5.0
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -25,6 +25,7 @@ define( 'ILDESC_SAVE_ATTRIBUTES', 'ildesc_save_attributes' );
 define( 'ILDESC_CATEGORY_TEMPLATES', 'ildesc_category_templates' );
 define( 'ILDESC_CONTENT_LANGUAGE',   'ildesc_content_language' );
 define( 'ILDESC_OVERWRITE_DATA',     'ildesc_overwrite_data' );
+define( 'ILDESC_UNIT_RULES',         'ildesc_unit_rules' );
 
 
 // Enqueue Assets (Unified function)
