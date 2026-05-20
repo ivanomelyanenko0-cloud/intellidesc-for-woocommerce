@@ -91,6 +91,8 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     $target_language = !empty($target_language) ? sanitize_text_field($target_language) : 'en';
     $language_instruction = "IMPORTANT: Write ALL content in language code: '{$target_language}'.";
 
+    $skip_features = (bool) get_option( ILDESC_SKIP_FEATURES, 0 );
+
     // ---------------------------------------------------------
     // 3. SETTINGS & PROMPT CONSTRUCTION
     // ---------------------------------------------------------
@@ -167,24 +169,18 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // 4. CONSTRUCT FINAL JSON & SYSTEM INSTRUCTION
     // ---------------------------------------------------------
     
-    $json_structure = "{'Short_Description': 'string', 'Long_Description': 'string', 'Features': [{'Name': 'string', 'Value': 'string'}]}";
+    $json_structure = "{'Short_Description': 'string', 'Long_Description': 'string'";
+    if ( ! $skip_features ) {
+        $json_structure .= ", 'Features': [{'Name': 'string', 'Value': 'string'}]";
+    }
+    $json_structure .= "}";
 
-    $base_instruction = "Act as an E-commerce Assistant. Analyze the product: \"{$product_title}\". 
-    
-    {$user_constraints_prompt}
-    {$tone_instruction}
-    {$product_type_context}
+    $features_task = '';
+    if ( ! $skip_features ) {
+        $features_task = "2. Generate features.
 
-    {$desc_prompt_part}
-    
-    {$language_instruction}
-    
-    TASK:
-    1. Generate descriptions.
-    2. Generate features. 
-       
        Input Constraints:
-       {$specialized_features_prompt} 
+       {$specialized_features_prompt}
        (If keys provided above, strictly fill ONLY those. Otherwise, find technical specs).
 
        Technical Data Rules:
@@ -192,11 +188,26 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
        - USE GOOGLE SEARCH TOOL.
        {$units_prompt_part}
        {$formatting_rules}
-       
-       - DO NOT use generic descriptors like 'High res'. Use NUMBERS.
+
+       - DO NOT use generic descriptors like 'High res'. Use NUMBERS.";
+    }
+
+    $base_instruction = "Act as an E-commerce Assistant. Analyze the product: \"{$product_title}\".
+
+    {$user_constraints_prompt}
+    {$tone_instruction}
+    {$product_type_context}
+
+    {$desc_prompt_part}
+
+    {$language_instruction}
+
+    TASK:
+    1. Generate descriptions.
+    {$features_task}
 
     STRICT OUTPUT RULES:
-    1. Return ONLY raw JSON. 
+    1. Return ONLY raw JSON.
     2. No Markdown blocks.
     3. Structure: {$json_structure}";
 
@@ -301,7 +312,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     }
 
     $editable_features = [];
-    if (!empty($features_json['Features']) && is_array($features_json['Features'])) {
+    if ( ! $skip_features && !empty($features_json['Features']) && is_array($features_json['Features'])) {
         foreach ($features_json['Features'] as $f) {
             $f_name = sanitize_text_field($f['Name'] ?? '');
             $f_value = sanitize_text_field($f['Value'] ?? '');

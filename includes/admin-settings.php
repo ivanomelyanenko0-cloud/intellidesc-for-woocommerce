@@ -31,6 +31,7 @@ function ildesc_register_settings() {
 
     // Unit Rules
     register_setting( $option_group, ILDESC_UNIT_RULES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_unit_rules') );
+    register_setting( $option_group, ILDESC_SKIP_FEATURES, array('type' => 'integer', 'sanitize_callback' => 'intval', 'default' => 0) );
 
     // Sections
     add_settings_section(
@@ -138,8 +139,10 @@ function ildesc_unit_rules_fields_callback() {
                                value="<?php echo esc_attr( $rule['unit'] ); ?>"
                                placeholder="<?php esc_attr_e( 'e.g. mAh', 'intellidesc-for-woocommerce' ); ?>">
                     </td>
-                    <td>
-                        <button type="button" class="button ildesc-remove-unit-rule"><?php esc_html_e( 'Remove', 'intellidesc-for-woocommerce' ); ?></button>
+                    <td style="text-align:center">
+                        <button type="button" class="button ildesc-remove-unit-rule"
+                            aria-label="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>"
+                            title="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>">&#x2715;</button>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -203,8 +206,10 @@ function ildesc_category_template_fields_callback() {
                                    value="<?php echo esc_attr( $template['features'] ); ?>" 
                                    placeholder="Processor, RAM..." class="ildesc-input-wide">
                         </td>
-                        <td>
-                             <button type="button" class="button ildesc-remove-template"><?php esc_html_e( 'Remove', 'intellidesc-for-woocommerce' ); ?></button>
+                        <td style="text-align:center">
+                            <button type="button" class="button ildesc-remove-template"
+                                aria-label="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>"
+                                title="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>">&#x2715;</button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -249,8 +254,11 @@ add_action( 'admin_menu', 'ildesc_add_settings_page' );
 function ildesc_settings_page_content() {
     ?>
     <div class="wrap">
-        <h2><?php esc_html_e( 'IntelliDesc for WooCommerce', 'intellidesc-for-woocommerce' ); ?></h2>        
-        
+        <div class="ildesc-page-header">
+            <h1><?php esc_html_e( 'IntelliDesc for WooCommerce', 'intellidesc-for-woocommerce' ); ?></h1>
+            <span class="ildesc-page-badge">AI Powered</span>
+        </div>
+
         <details class="ildesc-info-card">
             <summary class="ildesc-info-header">
                 <div class="ildesc-icon-text">
@@ -304,16 +312,37 @@ function ildesc_settings_page_content() {
             </div>
         </details>
 
-        <form method="post" action="options.php">
-            <?php settings_fields( 'ildesc_settings_group' ); ?>       
+        <form method="post" action="options.php" class="ildesc-settings-form">
+            <?php settings_fields( 'ildesc_settings_group' ); ?>
             <h3><?php esc_html_e( 'Main API Settings', 'intellidesc-for-woocommerce' ); ?></h3>
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row"><?php esc_html_e( 'Gemini API Key', 'intellidesc-for-woocommerce' ); ?></th>
                     <td>
-                        <input type="text" name="<?php echo esc_attr( ILDESC_SETTINGS_KEY ); ?>" 
-                            value="<?php echo esc_attr( get_option( ILDESC_SETTINGS_KEY ) ); ?>" 
-                            class="ildesc-api-key-input" placeholder="AIzaSy..."/>
+                        <div class="ildesc-api-key-wrap">
+                            <input type="password"
+                                id="ildesc-api-key-field"
+                                name="<?php echo esc_attr( ILDESC_SETTINGS_KEY ); ?>"
+                                value="<?php echo esc_attr( get_option( ILDESC_SETTINGS_KEY ) ); ?>"
+                                class="ildesc-api-key-input"
+                                placeholder="AIzaSy..."
+                                autocomplete="current-password" />
+                            <button type="button" id="ildesc-toggle-api-key" class="button"
+                                title="<?php esc_attr_e( 'Show / Hide key', 'intellidesc-for-woocommerce' ); ?>">
+                                <span class="dashicons dashicons-visibility"></span>
+                            </button>
+                            <?php if ( ! empty( get_option( ILDESC_SETTINGS_KEY ) ) ) : ?>
+                                <span class="ildesc-key-status is-set">
+                                    <span class="dashicons dashicons-yes-alt"></span>
+                                    <?php esc_html_e( 'Key is set', 'intellidesc-for-woocommerce' ); ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="ildesc-key-status is-missing">
+                                    <span class="dashicons dashicons-warning"></span>
+                                    <?php esc_html_e( 'Not configured', 'intellidesc-for-woocommerce' ); ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
             </table>
@@ -330,6 +359,14 @@ function ildesc_settings_page_content() {
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e( 'Generate Descriptions Only', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <input type="hidden" name="<?php echo esc_attr( ILDESC_SKIP_FEATURES ); ?>" value="0">
+                        <input type="checkbox" name="<?php echo esc_attr( ILDESC_SKIP_FEATURES ); ?>" value="1" <?php checked( get_option( ILDESC_SKIP_FEATURES ), 1 ); ?> />
+                        <p class="description"><?php esc_html_e( 'If checked, the AI will only generate the Short and Long Descriptions. Feature extraction (technical specs table) will be skipped.', 'intellidesc-for-woocommerce' ); ?></p>
                     </td>
                 </tr>
             </table>

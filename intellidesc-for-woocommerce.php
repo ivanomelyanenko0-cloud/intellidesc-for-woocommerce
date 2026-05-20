@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.5.0
+ * Version:           1.6
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -26,6 +26,7 @@ define( 'ILDESC_CATEGORY_TEMPLATES', 'ildesc_category_templates' );
 define( 'ILDESC_CONTENT_LANGUAGE',   'ildesc_content_language' );
 define( 'ILDESC_OVERWRITE_DATA',     'ildesc_overwrite_data' );
 define( 'ILDESC_UNIT_RULES',         'ildesc_unit_rules' );
+define( 'ILDESC_SKIP_FEATURES',     'ildesc_skip_features' );
 
 
 // Enqueue Assets (Unified function)
@@ -41,10 +42,10 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
     }
 
     // CSS
-    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.3.0' );
-    
-    // JS 
-    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.3.0', true );
+    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.6' );
+
+    // JS
+    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.6', true );
     
     // Localize JS
     wp_localize_script( 'ildesc-admin-script', 'ildesc_params', array(
@@ -98,21 +99,22 @@ add_action( 'add_meta_boxes', 'ildesc_register_metaboxes' );
 function ildesc_render_actions_metabox(  $post  ) {
     ?>
     <div class="ildesc-actions-wrapper">
-        <p class="description">
-            <?php esc_html_e( 'Click below to generate description and features based on title.', 'intellidesc-for-woocommerce' ); ?>
+        <p class="ildesc-actions-description">
+            <?php esc_html_e( 'Generate AI descriptions and technical specs based on the product title.', 'intellidesc-for-woocommerce' ); ?>
         </p>
-        <button type="button" id="ildesc-trigger-btn" class="button button-primary ildesc-full-width">
-            <?php esc_html_e( 'Generate Content', 'intellidesc-for-woocommerce' ); ?>
+        <button type="button" id="ildesc-trigger-btn" class="button button-primary">
+            <span class="dashicons dashicons-superhero"></span>
+            <span class="ildesc-btn-text"><?php esc_html_e( 'Generate Content', 'intellidesc-for-woocommerce' ); ?></span>
         </button>
 
         <div id="ildesc-loader" class="ildesc-loader-container">
             <span class="spinner is-active ildesc-spinner-inline"></span>
             <span id="ildesc-loader-text"><?php esc_html_e( 'Processing...', 'intellidesc-for-woocommerce' ); ?></span>
         </div>
-        
-        <div id="ildesc-status-message" class="ildesc-margin-top-10"></div>
+
+        <div id="ildesc-status-message"></div>
     </div>
-    <?php 
+    <?php
 }
 
 // Render Main Features Metabox
@@ -153,8 +155,10 @@ function ildesc_render_product_features_metabox(  $post  ) {
                             <input type="text" class="ildesc-input-wide" name="ildesc_feature[<?php echo esc_attr( $index ); ?>][value]" 
                                    value="<?php echo esc_attr( $feature['value'] ?? '' ); ?>" placeholder="Value">
                         </td>
-                        <td>
-                            <button type="button" class="button ildesc-remove-feature"><?php esc_html_e( 'Remove', 'intellidesc-for-woocommerce' ); ?></button>
+                        <td style="text-align:center">
+                            <button type="button" class="button ildesc-remove-feature"
+                                aria-label="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>"
+                                title="<?php esc_attr_e( 'Remove', 'intellidesc-for-woocommerce' ); ?>">&#x2715;</button>
                         </td>
                     </tr>
                 <?php } ?>

@@ -2,8 +2,8 @@
 Contributors: lukystile
 Tags: woocommerce, ai, gemini, product-description, seo
 Requires at least: 6.0
-Tested up to: 6.9
-Stable tag: 1.5.0
+Tested up to: 7.0
+Stable tag: 1.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,17 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 The plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 == Changelog ==
+
+= 1.6 =
+* Improved: Complete admin UI redesign — new CSS design system with CSS custom properties (color tokens, radius, transitions) for consistent look across all plugin pages.
+* Improved: "Generate Content" button now uses a branded gradient and includes a superhero icon.
+* Improved: Status messages (success/error) now display with a matching Dashicon for faster visual feedback.
+* Improved: Features table and settings tables — unified header styling, row hover effect, and fade-out animation when deleting rows.
+* Improved: "Add Feature / Add Template / Add Unit Rule" buttons now use a dashed outline style; new rows animate in with a highlight flash.
+* Improved: "Remove" row buttons replaced with a compact × icon button with a red hover state.
+* Improved: Loader uses a styled info-box (blue background + border) instead of a plain spinner.
+* Improved: Asset versions bumped to 1.6 to bust browser cache.
+* New: **Generate Descriptions Only** option (WooCommerce → IntelliDesc → Content Generation). When enabled, the AI generates only the Short and Long Descriptions — feature/specs extraction is completely skipped. Useful for stores that manage attributes manually or want faster, token-light generation.
 
 = 1.5.0 =
 * New: Unit Rules. Define the exact unit or format Gemini must use for specific feature values (e.g., "Battery Capacity" → always in "mAh"). Configurable per-store in WooCommerce → IntelliDesc settings.
