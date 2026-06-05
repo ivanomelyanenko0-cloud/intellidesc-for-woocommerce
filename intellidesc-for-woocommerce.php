@@ -27,6 +27,7 @@ define( 'ILDESC_CONTENT_LANGUAGE',   'ildesc_content_language' );
 define( 'ILDESC_OVERWRITE_DATA',     'ildesc_overwrite_data' );
 define( 'ILDESC_UNIT_RULES',         'ildesc_unit_rules' );
 define( 'ILDESC_SKIP_FEATURES',     'ildesc_skip_features' );
+define( 'ILDESC_SELECTED_MODEL',    'ildesc_selected_model' );
 
 
 // Enqueue Assets (Unified function)

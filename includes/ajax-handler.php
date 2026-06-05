@@ -98,8 +98,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // ---------------------------------------------------------
 
     // A. MODEL SELECTION
-    // Default (Free): Stable Flash model
-    $selected_model = 'gemini-2.5-flash'; 
+    $selected_model = get_option( ILDESC_SELECTED_MODEL, 'gemini-3.1-flash-lite' );
 
     // B. TONE OF VOICE
     // Default (Free): Neutral / Informative
@@ -220,13 +219,29 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
         'tools' => [['google_search' => (object)[]]]
     ];
     $request_json = wp_json_encode($request_body_array);
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$selected_model}:generateContent?key=" . $api_key;
 
-    $response = wp_remote_post($url, array(
-        'headers' => array('Content-Type' => 'application/json'),
-        'body'    => $request_json,
-        'timeout' => 60,
-    ));
+    $fallback_model = 'gemini-2.5-flash';
+    $models_to_try  = ($selected_model !== $fallback_model) ? [$selected_model, $fallback_model] : [$selected_model];
+
+    $response      = null;
+    $http_code     = 0;
+    $response_body = '';
+
+    foreach ($models_to_try as $model_attempt) {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model_attempt}:generateContent?key=" . $api_key;
+        $response = wp_remote_post($url, array(
+            'headers' => array('Content-Type' => 'application/json'),
+            'body'    => $request_json,
+            'timeout' => 60,
+        ));
+
+        if (is_wp_error($response)) continue;
+
+        $http_code     = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+
+        if ($http_code === 200) break;
+    }
 
     if (is_wp_error($response)) {
         return new WP_Error('api_error', __('Connection failed: ', 'intellidesc-for-woocommerce') . $response->get_error_message());
@@ -235,9 +250,6 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // ---------------------------------------------------------
     // 6. HTTP STATUS & JSON PARSING
     // ---------------------------------------------------------
-
-    $http_code    = wp_remote_retrieve_response_code($response);
-    $response_body = wp_remote_retrieve_body($response);
 
     if ($http_code !== 200) {
         $error_data  = json_decode($response_body, true);

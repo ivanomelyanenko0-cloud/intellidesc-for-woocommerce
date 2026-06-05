@@ -5,6 +5,41 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+function ildesc_get_gemini_models() {
+    $api_key = get_option( ILDESC_SETTINGS_KEY );
+    if ( empty( $api_key ) ) return [];
+
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' ) ) {
+        delete_transient( 'ildesc_gemini_models_list' );
+    }
+
+    $cached = get_transient( 'ildesc_gemini_models_list' );
+    if ( $cached !== false ) return $cached;
+
+    $response = wp_remote_get( "https://generativelanguage.googleapis.com/v1beta/models?key=" . $api_key );
+    if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) return [];
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['models'] ) ) return [];
+
+    $models    = [];
+    $blacklist = [ 'nano', 'embedding', 'tts', 'aqa', 'vision', 'preview', 'Experimental', 'exp', 'image', 'img' ];
+
+    foreach ( $body['models'] as $model ) {
+        $name = $model['name'];
+        if ( strpos( $name, 'gemini' ) === false || ! in_array( 'generateContent', $model['supportedGenerationMethods'] ) ) continue;
+        foreach ( $blacklist as $bad ) {
+            if ( strpos( $name, $bad ) !== false ) continue 2;
+        }
+        $id          = str_replace( 'models/', '', $name );
+        $models[$id] = $model['displayName'] . ' (' . $model['version'] . ')';
+    }
+
+    krsort( $models );
+    set_transient( 'ildesc_gemini_models_list', $models, 86400 );
+    return $models;
+}
+
 function ildesc_register_settings() {
     $option_group = 'ildesc_settings_group';
     $page_slug    = 'ildesc_settings_page';
@@ -14,6 +49,9 @@ function ildesc_register_settings() {
     
     // API Key
     register_setting( $option_group, ILDESC_SETTINGS_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+
+    // Selected model
+    register_setting( $option_group, ILDESC_SELECTED_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
     
     // Templates
     register_setting( $option_group, ILDESC_CATEGORY_TEMPLATES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_category_templates') );
@@ -343,6 +381,29 @@ function ildesc_settings_page_content() {
                                 </span>
                             <?php endif; ?>
                         </div>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php esc_html_e( 'AI Model', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php
+                        $models         = ildesc_get_gemini_models();
+                        $selected_model = get_option( ILDESC_SELECTED_MODEL, 'gemini-3.1-flash-lite' );
+
+                        if ( empty( $models ) ) {
+                            echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
+                            echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_SELECTED_MODEL ) . '" value="' . esc_attr( $selected_model ) . '" placeholder="gemini-3.1-flash-lite">';
+                        } else {
+                            echo '<select name="' . esc_attr( ILDESC_SELECTED_MODEL ) . '">';
+                            foreach ( $models as $id => $label ) {
+                                echo '<option value="' . esc_attr( $id ) . '" ' . selected( $selected_model, $id, false ) . '>' . esc_html( $label . ' [' . $id . ']' ) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <p class="description">
+                            <a href="?page=ildesc_settings_page&refresh_models=1"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                        </p>
                     </td>
                 </tr>
             </table>
