@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.7
+ * Version:           1.8
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -28,6 +28,13 @@ define( 'ILDESC_OVERWRITE_DATA',     'ildesc_overwrite_data' );
 define( 'ILDESC_UNIT_RULES',         'ildesc_unit_rules' );
 define( 'ILDESC_SKIP_FEATURES',     'ildesc_skip_features' );
 define( 'ILDESC_SELECTED_MODEL',    'ildesc_selected_model' );
+define( 'ILDESC_AI_PROVIDER',       'ildesc_ai_provider' );
+define( 'ILDESC_ANTHROPIC_API_KEY', 'ildesc_anthropic_api_key' );
+define( 'ILDESC_ANTHROPIC_MODEL',   'ildesc_anthropic_model' );
+define( 'ILDESC_OPENAI_API_KEY',    'ildesc_openai_api_key' );
+define( 'ILDESC_OPENAI_MODEL',      'ildesc_openai_model' );
+define( 'ILDESC_XAI_API_KEY',       'ildesc_xai_api_key' );
+define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
 
 
 // Enqueue Assets (Unified function)
@@ -55,7 +62,7 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'no_title'        => __( 'Please enter a product title first.', 'intellidesc-for-woocommerce' ),
         'no_selected'     => __( 'No products selected!', 'intellidesc-for-woocommerce' ),
         'confirm_bulk'    => __( 'Start generation for selected products?', 'intellidesc-for-woocommerce' ),
-        'loading_text'    => __( 'Sending request to Gemini...', 'intellidesc-for-woocommerce' ),
+        'loading_text'    => __( 'Sending request to AI...', 'intellidesc-for-woocommerce' ),
         'btn_default'     => __( 'Generate Content', 'intellidesc-for-woocommerce' ),
         'btn_loading'     => __( 'Generating...', 'intellidesc-for-woocommerce' ),
         'status_success'  => __( 'Success! Data saved.', 'intellidesc-for-woocommerce' ),
@@ -72,6 +79,11 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
 add_action( 'admin_enqueue_scripts', 'ildesc_enqueue_admin_assets' );
 
 // Include other files
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-gemini.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-anthropic.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-openai.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-xai.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/ai-dispatch.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/admin-settings.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ajax-handler.php';
 
@@ -79,7 +91,7 @@ require_once ILDESC_PLUGIN_DIR . 'includes/ajax-handler.php';
 function ildesc_register_metaboxes() {
     add_meta_box(
         'ildesc_actions_metabox',
-        __( 'Gemini AI Actions', 'intellidesc-for-woocommerce' ),
+        __( 'AI Actions', 'intellidesc-for-woocommerce' ),
         'ildesc_render_actions_metabox',
         'product',
         'side',
@@ -87,7 +99,7 @@ function ildesc_register_metaboxes() {
     );
     add_meta_box(
         'ildesc_features_metabox',
-        __( 'Gemini AI Features (Edit)', 'intellidesc-for-woocommerce' ),
+        __( 'AI Features (Edit)', 'intellidesc-for-woocommerce' ),
         'ildesc_render_product_features_metabox',
         'product',
         'normal',

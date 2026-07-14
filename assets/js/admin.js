@@ -188,8 +188,8 @@ jQuery(document).ready(function($) {
     // ==========================================
     // 5. API KEY SHOW / HIDE
     // ==========================================
-    $('#ildesc-toggle-api-key').on('click', function() {
-        var $input = $('#ildesc-api-key-field');
+    $(document).on('click', '.ildesc-toggle-api-key', function() {
+        var $input = $(this).siblings('.ildesc-api-key-field');
         var $icon  = $(this).find('.dashicons');
         if ($input.attr('type') === 'password') {
             $input.attr('type', 'text');

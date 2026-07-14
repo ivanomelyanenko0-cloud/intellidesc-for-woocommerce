@@ -9,7 +9,8 @@ function ildesc_get_gemini_models() {
     $api_key = get_option( ILDESC_SETTINGS_KEY );
     if ( empty( $api_key ) ) return [];
 
-    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' ) ) {
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' )
+        && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
         delete_transient( 'ildesc_gemini_models_list' );
     }
 
@@ -40,6 +41,116 @@ function ildesc_get_gemini_models() {
     return $models;
 }
 
+function ildesc_get_anthropic_models() {
+    $api_key = get_option( ILDESC_ANTHROPIC_API_KEY );
+    if ( empty( $api_key ) ) return [];
+
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' )
+        && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
+        delete_transient( 'ildesc_anthropic_models_list' );
+    }
+
+    $cached = get_transient( 'ildesc_anthropic_models_list' );
+    if ( $cached !== false ) return $cached;
+
+    $response = wp_remote_get( 'https://api.anthropic.com/v1/models', [
+        'headers' => [
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+        ],
+        'timeout' => 15,
+    ] );
+    if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) return [];
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['data'] ) ) return [];
+
+    $models = [];
+    foreach ( $body['data'] as $model ) {
+        $models[ $model['id'] ] = $model['display_name'] ?? $model['id'];
+    }
+
+    set_transient( 'ildesc_anthropic_models_list', $models, 86400 );
+    return $models;
+}
+
+function ildesc_get_openai_models() {
+    $api_key = get_option( ILDESC_OPENAI_API_KEY );
+    if ( empty( $api_key ) ) return [];
+
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' )
+        && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
+        delete_transient( 'ildesc_openai_models_list' );
+    }
+
+    $cached = get_transient( 'ildesc_openai_models_list' );
+    if ( $cached !== false ) return $cached;
+
+    $response = wp_remote_get( 'https://api.openai.com/v1/models', [
+        'headers' => [ 'Authorization' => 'Bearer ' . $api_key ],
+        'timeout' => 15,
+    ] );
+    if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) return [];
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['data'] ) ) return [];
+
+    $models            = [];
+    $allowed_prefixes  = [ 'gpt-', 'o1', 'o3', 'o4', 'chatgpt-' ];
+    $blacklist         = [ 'whisper', 'tts', 'dall-e', 'embedding', 'moderation', 'davinci', 'babbage', 'audio', 'realtime', 'transcribe', 'image', 'search', 'similarity', 'edit', 'insert', 'instruct' ];
+
+    foreach ( $body['data'] as $model ) {
+        $id = $model['id'];
+
+        $is_allowed = false;
+        foreach ( $allowed_prefixes as $prefix ) {
+            if ( strpos( $id, $prefix ) === 0 ) { $is_allowed = true; break; }
+        }
+        if ( ! $is_allowed ) continue;
+
+        foreach ( $blacklist as $bad ) {
+            if ( strpos( $id, $bad ) !== false ) continue 2;
+        }
+
+        $models[ $id ] = $id;
+    }
+
+    krsort( $models );
+    set_transient( 'ildesc_openai_models_list', $models, 86400 );
+    return $models;
+}
+
+function ildesc_get_xai_models() {
+    $api_key = get_option( ILDESC_XAI_API_KEY );
+    if ( empty( $api_key ) ) return [];
+
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' )
+        && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
+        delete_transient( 'ildesc_xai_models_list' );
+    }
+
+    $cached = get_transient( 'ildesc_xai_models_list' );
+    if ( $cached !== false ) return $cached;
+
+    $response = wp_remote_get( 'https://api.x.ai/v1/models', [
+        'headers' => [ 'Authorization' => 'Bearer ' . $api_key ],
+        'timeout' => 15,
+    ] );
+    if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) return [];
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['data'] ) ) return [];
+
+    $models = [];
+    foreach ( $body['data'] as $model ) {
+        $models[ $model['id'] ] = $model['id'];
+    }
+
+    krsort( $models );
+    set_transient( 'ildesc_xai_models_list', $models, 86400 );
+    return $models;
+}
+
 function ildesc_register_settings() {
     $option_group = 'ildesc_settings_group';
     $page_slug    = 'ildesc_settings_page';
@@ -52,7 +163,22 @@ function ildesc_register_settings() {
 
     // Selected model
     register_setting( $option_group, ILDESC_SELECTED_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
-    
+
+    // AI Provider selection
+    register_setting( $option_group, ILDESC_AI_PROVIDER, array('type' => 'string', 'default' => 'gemini', 'sanitize_callback' => 'sanitize_text_field') );
+
+    // Anthropic Claude
+    register_setting( $option_group, ILDESC_ANTHROPIC_API_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+    register_setting( $option_group, ILDESC_ANTHROPIC_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+
+    // OpenAI
+    register_setting( $option_group, ILDESC_OPENAI_API_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+    register_setting( $option_group, ILDESC_OPENAI_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+
+    // xAI Grok
+    register_setting( $option_group, ILDESC_XAI_API_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+    register_setting( $option_group, ILDESC_XAI_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+
     // Templates
     register_setting( $option_group, ILDESC_CATEGORY_TEMPLATES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_category_templates') );
 
@@ -137,11 +263,11 @@ function ildesc_sanitize_unit_rules( $input ) {
 }
 
 function ildesc_templates_section_callback() {
-    echo '<p>' . esc_html__( 'Define mandatory features that Gemini should look for specific WooCommerce categories.', 'intellidesc-for-woocommerce' ) . '</p>';
+    echo '<p>' . esc_html__( 'Define mandatory features that the AI should look for specific WooCommerce categories.', 'intellidesc-for-woocommerce' ) . '</p>';
 }
 
 function ildesc_unit_rules_section_callback() {
-    echo '<p>' . esc_html__( 'Define the exact unit or format Gemini must use when outputting specific feature values. For example: "Battery Capacity" → "mAh" will force Gemini to always output battery values as "5000 mAh".', 'intellidesc-for-woocommerce' ) . '</p>';
+    echo '<p>' . esc_html__( 'Define the exact unit or format the AI must use when outputting specific feature values. For example: "Battery Capacity" → "mAh" will force the AI to always output battery values as "5000 mAh".', 'intellidesc-for-woocommerce' ) . '</p>';
 }
 
 function ildesc_unit_rules_fields_callback() {
@@ -264,6 +390,40 @@ function ildesc_category_template_fields_callback() {
     <?php
 }
 
+/**
+ * Renders a password-style API key field with a show/hide toggle and a
+ * "Key is set / Not configured" status badge. Shared across all providers
+ * so every "AI Provider" row looks and behaves identically.
+ */
+function ildesc_render_api_key_field( $option_name, $placeholder ) {
+    $value = get_option( $option_name );
+    ?>
+    <div class="ildesc-api-key-wrap">
+        <input type="password"
+            name="<?php echo esc_attr( $option_name ); ?>"
+            value="<?php echo esc_attr( $value ); ?>"
+            class="ildesc-api-key-input ildesc-api-key-field"
+            placeholder="<?php echo esc_attr( $placeholder ); ?>"
+            autocomplete="current-password" />
+        <button type="button" class="button ildesc-toggle-api-key"
+            title="<?php esc_attr_e( 'Show / Hide key', 'intellidesc-for-woocommerce' ); ?>">
+            <span class="dashicons dashicons-visibility"></span>
+        </button>
+        <?php if ( ! empty( $value ) ) : ?>
+            <span class="ildesc-key-status is-set">
+                <span class="dashicons dashicons-yes-alt"></span>
+                <?php esc_html_e( 'Key is set', 'intellidesc-for-woocommerce' ); ?>
+            </span>
+        <?php else : ?>
+            <span class="ildesc-key-status is-missing">
+                <span class="dashicons dashicons-warning"></span>
+                <?php esc_html_e( 'Not configured', 'intellidesc-for-woocommerce' ); ?>
+            </span>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
 function ildesc_get_available_languages() {
     return array(
         'default' => __( 'WordPress Default Language', 'intellidesc-for-woocommerce' ),
@@ -300,53 +460,56 @@ function ildesc_settings_page_content() {
         <details class="ildesc-info-card">
             <summary class="ildesc-info-header">
                 <div class="ildesc-icon-text">
-                    <span class="dashicons dashicons-info-outline"></span> 
-                    <span><?php esc_html_e('How to get API Key & Pricing Limits (Read First)', 'intellidesc-for-woocommerce'); ?></span>
+                    <span class="dashicons dashicons-info-outline"></span>
+                    <span><?php esc_html_e('How to get an API Key & Pricing (Read First)', 'intellidesc-for-woocommerce'); ?></span>
                 </div>
                 <span class="dashicons dashicons-arrow-down-alt2"></span>
             </summary>
-            
+
             <div class="ildesc-info-content">
+                <p class="description"><?php esc_html_e('Pick one AI provider below, grab an API key from it, then select that provider in the form under "Main API Settings".', 'intellidesc-for-woocommerce'); ?></p>
+
                 <div class="ildesc-info-flex-container">
                     <div class="ildesc-info-flex-item">
-                        <h3><?php esc_html_e('1. How to get a FREE API Key', 'intellidesc-for-woocommerce'); ?></h3>
+                        <h3><?php esc_html_e('Google Gemini', 'intellidesc-for-woocommerce'); ?></h3>
                         <ol>
                             <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</li>
                             <li><?php echo wp_kses_post( __('Click <strong>"Create API Key"</strong>.', 'intellidesc-for-woocommerce') ); ?></li>
-                            <li><?php esc_html_e('Select "Create API key in new project".', 'intellidesc-for-woocommerce'); ?></li>
-                            <li><?php esc_html_e('Copy the key and paste it below.', 'intellidesc-for-woocommerce'); ?></li>
+                            <li><?php esc_html_e('Select "Create API key in new project" and copy it.', 'intellidesc-for-woocommerce'); ?></li>
                         </ol>
+                        <p><?php echo wp_kses_post( __('<strong>Free tier:</strong> 5–15 requests/minute, ~1,500/day. Paid: 1,000+ RPM, unlimited.', 'intellidesc-for-woocommerce') ); ?></p>
                     </div>
 
                     <div class="ildesc-info-flex-item">
-                        <h3><?php esc_html_e('2. Is it Free?', 'intellidesc-for-woocommerce'); ?></h3>
-                        <p><?php echo wp_kses_post( __('Yes! The <strong>"Gemini Flash"</strong> models (2.0 / 2.5) have a generous free tier.', 'intellidesc-for-woocommerce') ); ?></p>
-                        <p class="ildesc-margin-top-5"><strong><?php esc_html_e('Limits:', 'intellidesc-for-woocommerce'); ?></strong> 5 - 15 requests / minute.</p>
-                        <p><em><?php esc_html_e('The plugin automatically handles delays for bulk actions to keep you safe.', 'intellidesc-for-woocommerce'); ?></em></p>
+                        <h3><?php esc_html_e('Anthropic Claude', 'intellidesc-for-woocommerce'); ?></h3>
+                        <ol>
+                            <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a>.</li>
+                            <li><?php echo wp_kses_post( __('Open <strong>Settings → API Keys</strong> and click "Create Key".', 'intellidesc-for-woocommerce') ); ?></li>
+                            <li><?php esc_html_e('Add billing credit under Settings → Billing.', 'intellidesc-for-woocommerce'); ?></li>
+                        </ol>
+                        <p><em><?php esc_html_e('Pay-as-you-go — no free tier. Requires a paid credit balance.', 'intellidesc-for-woocommerce'); ?></em></p>
+                    </div>
+
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e('OpenAI', 'intellidesc-for-woocommerce'); ?></h3>
+                        <ol>
+                            <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.</li>
+                            <li><?php echo wp_kses_post( __('Click <strong>"Create new secret key"</strong>.', 'intellidesc-for-woocommerce') ); ?></li>
+                            <li><?php esc_html_e('Add billing credit under Settings → Billing.', 'intellidesc-for-woocommerce'); ?></li>
+                        </ol>
+                        <p><em><?php esc_html_e('Pay-as-you-go — no free tier. Requires a paid credit balance.', 'intellidesc-for-woocommerce'); ?></em></p>
+                    </div>
+
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e('xAI Grok', 'intellidesc-for-woocommerce'); ?></h3>
+                        <ol>
+                            <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://console.x.ai" target="_blank">xAI Console</a>.</li>
+                            <li><?php echo wp_kses_post( __('Open <strong>API Keys</strong> and create a new key.', 'intellidesc-for-woocommerce') ); ?></li>
+                            <li><?php esc_html_e('Add billing credit to your account.', 'intellidesc-for-woocommerce'); ?></li>
+                        </ol>
+                        <p><em><?php esc_html_e('Pay-as-you-go — no free tier. Requires a paid credit balance.', 'intellidesc-for-woocommerce'); ?></em></p>
                     </div>
                 </div>
-
-                <table class="ildesc-limit-table">
-                    <thead>
-                        <tr>
-                            <th class="ildesc-col-20"><?php esc_html_e('Plan', 'intellidesc-for-woocommerce'); ?></th>
-                            <th class="ildesc-col-30"><?php esc_html_e('Speed Limit (RPM)', 'intellidesc-for-woocommerce'); ?></th>
-                            <th><?php esc_html_e('Daily Limit (approx)', 'intellidesc-for-woocommerce'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Free</strong></td>
-                            <td><strong>5 - 15 RPM</strong><br><span class="ildesc-text-small-muted">(Depends on model version)</span></td>
-                            <td>~1,500 Requests / Day</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Paid</strong></td>
-                            <td>1,000+ RPM</td>
-                            <td>Unlimited</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </details>
 
@@ -355,35 +518,25 @@ function ildesc_settings_page_content() {
             <h3><?php esc_html_e( 'Main API Settings', 'intellidesc-for-woocommerce' ); ?></h3>
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row"><?php esc_html_e( 'Gemini API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <th scope="row"><?php esc_html_e( 'AI Provider', 'intellidesc-for-woocommerce' ); ?></th>
                     <td>
-                        <div class="ildesc-api-key-wrap">
-                            <input type="password"
-                                id="ildesc-api-key-field"
-                                name="<?php echo esc_attr( ILDESC_SETTINGS_KEY ); ?>"
-                                value="<?php echo esc_attr( get_option( ILDESC_SETTINGS_KEY ) ); ?>"
-                                class="ildesc-api-key-input"
-                                placeholder="AIzaSy..."
-                                autocomplete="current-password" />
-                            <button type="button" id="ildesc-toggle-api-key" class="button"
-                                title="<?php esc_attr_e( 'Show / Hide key', 'intellidesc-for-woocommerce' ); ?>">
-                                <span class="dashicons dashicons-visibility"></span>
-                            </button>
-                            <?php if ( ! empty( get_option( ILDESC_SETTINGS_KEY ) ) ) : ?>
-                                <span class="ildesc-key-status is-set">
-                                    <span class="dashicons dashicons-yes-alt"></span>
-                                    <?php esc_html_e( 'Key is set', 'intellidesc-for-woocommerce' ); ?>
-                                </span>
-                            <?php else : ?>
-                                <span class="ildesc-key-status is-missing">
-                                    <span class="dashicons dashicons-warning"></span>
-                                    <?php esc_html_e( 'Not configured', 'intellidesc-for-woocommerce' ); ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
+                        <?php $current_provider = ildesc_get_current_provider(); ?>
+                        <select name="<?php echo esc_attr( ILDESC_AI_PROVIDER ); ?>" id="ildesc-provider-select">
+                            <option value="gemini" <?php selected( $current_provider, 'gemini' ); ?>><?php esc_html_e( 'Google Gemini', 'intellidesc-for-woocommerce' ); ?></option>
+                            <option value="anthropic" <?php selected( $current_provider, 'anthropic' ); ?>><?php esc_html_e( 'Anthropic Claude', 'intellidesc-for-woocommerce' ); ?></option>
+                            <option value="openai" <?php selected( $current_provider, 'openai' ); ?>><?php esc_html_e( 'OpenAI', 'intellidesc-for-woocommerce' ); ?></option>
+                            <option value="xai" <?php selected( $current_provider, 'xai' ); ?>><?php esc_html_e( 'xAI Grok', 'intellidesc-for-woocommerce' ); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Choose which AI provider generates your product content.', 'intellidesc-for-woocommerce' ); ?></p>
                     </td>
                 </tr>
-                <tr valign="top">
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-gemini" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'Gemini API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_api_key_field( ILDESC_SETTINGS_KEY, 'AIzaSy...' ); ?>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-gemini" style="display:none;">
                     <th scope="row"><?php esc_html_e( 'AI Model', 'intellidesc-for-woocommerce' ); ?></th>
                     <td>
                         <?php
@@ -402,11 +555,118 @@ function ildesc_settings_page_content() {
                         }
                         ?>
                         <p class="description">
-                            <a href="?page=ildesc_settings_page&refresh_models=1"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                            <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-anthropic" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'Anthropic API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_api_key_field( ILDESC_ANTHROPIC_API_KEY, 'sk-ant-...' ); ?>
+                        <p class="description">
+                            <?php esc_html_e( 'Get your key from', 'intellidesc-for-woocommerce' ); ?> <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-anthropic" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'Claude Model', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php
+                        $models           = ildesc_get_anthropic_models();
+                        $anthropic_model  = get_option( ILDESC_ANTHROPIC_MODEL, 'claude-sonnet-4-5-20250929' );
+
+                        if ( empty( $models ) ) {
+                            echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
+                            echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_ANTHROPIC_MODEL ) . '" value="' . esc_attr( $anthropic_model ) . '" placeholder="claude-sonnet-4-5-20250929">';
+                        } else {
+                            echo '<select name="' . esc_attr( ILDESC_ANTHROPIC_MODEL ) . '">';
+                            foreach ( $models as $id => $label ) {
+                                echo '<option value="' . esc_attr( $id ) . '" ' . selected( $anthropic_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <p class="description">
+                            <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-openai" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'OpenAI API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_api_key_field( ILDESC_OPENAI_API_KEY, 'sk-...' ); ?>
+                        <p class="description">
+                            <?php esc_html_e( 'Get your key from', 'intellidesc-for-woocommerce' ); ?> <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-openai" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'OpenAI Model', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php
+                        $models       = ildesc_get_openai_models();
+                        $openai_model = get_option( ILDESC_OPENAI_MODEL, 'gpt-4.1-mini' );
+
+                        if ( empty( $models ) ) {
+                            echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
+                            echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_OPENAI_MODEL ) . '" value="' . esc_attr( $openai_model ) . '" placeholder="gpt-4.1-mini">';
+                        } else {
+                            echo '<select name="' . esc_attr( ILDESC_OPENAI_MODEL ) . '">';
+                            foreach ( $models as $id => $label ) {
+                                echo '<option value="' . esc_attr( $id ) . '" ' . selected( $openai_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <p class="description">
+                            <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-xai" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'xAI API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_api_key_field( ILDESC_XAI_API_KEY, 'xai-...' ); ?>
+                        <p class="description">
+                            <?php esc_html_e( 'Get your key from', 'intellidesc-for-woocommerce' ); ?> <a href="https://console.x.ai" target="_blank">console.x.ai</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-xai" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'Grok Model', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php
+                        $models   = ildesc_get_xai_models();
+                        $xai_model = get_option( ILDESC_XAI_MODEL, 'grok-4-fast' );
+
+                        if ( empty( $models ) ) {
+                            echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
+                            echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_XAI_MODEL ) . '" value="' . esc_attr( $xai_model ) . '" placeholder="grok-4-fast">';
+                        } else {
+                            echo '<select name="' . esc_attr( ILDESC_XAI_MODEL ) . '">';
+                            foreach ( $models as $id => $label ) {
+                                echo '<option value="' . esc_attr( $id ) . '" ' . selected( $xai_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <p class="description">
+                            <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
                     </td>
                 </tr>
             </table>
+            <script>
+            (function($){
+                function ildescToggleProviderRows() {
+                    var provider = $('#ildesc-provider-select').val();
+                    $('.ildesc-provider-row').hide();
+                    $('.ildesc-provider-row-' + provider).show();
+                }
+                $(document).on('change', '#ildesc-provider-select', ildescToggleProviderRows);
+                $(ildescToggleProviderRows);
+            })(jQuery);
+            </script>
 
             <h3><?php esc_html_e( 'Content Generation', 'intellidesc-for-woocommerce' ); ?></h3>
             <table class="form-table">

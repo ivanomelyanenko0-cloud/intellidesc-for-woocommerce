@@ -41,9 +41,11 @@ function ildesc_handle_autocomplete_features() {
 function ildesc_generate_content_for_product($product_id, $product_title) {
     
     // 1. Basic Checks
-    $api_key = get_option(ILDESC_SETTINGS_KEY);
+    $provider = ildesc_get_current_provider();
+    $api_key  = ildesc_get_api_key_for_provider( $provider );
     if (empty($api_key)) {
-        return new WP_Error('api_key', __('Gemini API Key is missing.', 'intellidesc-for-woocommerce'));
+        /* translators: %s: AI provider name (e.g. Gemini, Claude) */
+        return new WP_Error('api_key', sprintf( __('%s API Key is missing.', 'intellidesc-for-woocommerce'), ildesc_ai_provider_label( $provider ) ));
     }
 
     // GET PRODUCT TYPE
@@ -54,10 +56,11 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     $is_virtual = $product->is_virtual();
     $is_downloadable = $product->is_downloadable();
 
+    // phpcs:disable WordPress.Security.NonceVerification.Missing -- nonce already verified in ildesc_handle_autocomplete_features() before this function is called.
     if ( isset($_POST['product_type_ui']) ) {
         $product_type = sanitize_text_field(wp_unslash($_POST['product_type_ui']));
     }
-    
+
     if ( isset($_POST['is_virtual_ui']) ) {
         $is_virtual = !empty($_POST['is_virtual_ui']);
     }
@@ -68,6 +71,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
 
     $context_excerpt  = isset($_POST['current_excerpt']) ? sanitize_textarea_field(wp_unslash($_POST['current_excerpt'])) : '';
     $context_features = isset($_POST['existing_features']) ? sanitize_text_field(wp_unslash($_POST['existing_features'])) : '';
+    // phpcs:enable WordPress.Security.NonceVerification.Missing
 
     $user_constraints_prompt = "";
     if (!empty($context_features) || !empty($context_excerpt)) {
@@ -98,7 +102,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // ---------------------------------------------------------
 
     // A. MODEL SELECTION
-    $selected_model = get_option( ILDESC_SELECTED_MODEL, 'gemini-3.1-flash-lite' );
+    $selected_model = ildesc_get_model_for_provider( $provider );
 
     // B. TONE OF VOICE
     // Default (Free): Neutral / Informative
@@ -174,6 +178,8 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     }
     $json_structure .= "}";
 
+    $search_tool_instruction = ( $provider === 'gemini' ) ? "- USE GOOGLE SEARCH TOOL.\n       " : '';
+
     $features_task = '';
     if ( ! $skip_features ) {
         $features_task = "2. Generate features.
@@ -184,8 +190,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
 
        Technical Data Rules:
        - Values must be PRECISE and FACTUAL.
-       - USE GOOGLE SEARCH TOOL.
-       {$units_prompt_part}
+       {$search_tool_instruction}{$units_prompt_part}
        {$formatting_rules}
 
        - DO NOT use generic descriptors like 'High res'. Use NUMBERS.";
@@ -214,79 +219,16 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // 5. API REQUEST
     // ---------------------------------------------------------
 
-    $request_body_array = [
-        'contents' => [['role' => 'user', 'parts' => [['text' => $base_instruction]]]],
-        'tools' => [['google_search' => (object)[]]]
-    ];
-    $request_json = wp_json_encode($request_body_array);
+    $ai_result = ildesc_ai_call( $provider, $selected_model, $base_instruction, $api_key, [
+        'use_search_tool' => ( $provider === 'gemini' ),
+        'fallback_model'  => ( $provider === 'gemini' ) ? 'gemini-2.5-flash' : '',
+    ] );
 
-    $fallback_model = 'gemini-2.5-flash';
-    $models_to_try  = ($selected_model !== $fallback_model) ? [$selected_model, $fallback_model] : [$selected_model];
-
-    $response      = null;
-    $http_code     = 0;
-    $response_body = '';
-
-    foreach ($models_to_try as $model_attempt) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model_attempt}:generateContent?key=" . $api_key;
-        $response = wp_remote_post($url, array(
-            'headers' => array('Content-Type' => 'application/json'),
-            'body'    => $request_json,
-            'timeout' => 60,
-        ));
-
-        if (is_wp_error($response)) continue;
-
-        $http_code     = wp_remote_retrieve_response_code($response);
-        $response_body = wp_remote_retrieve_body($response);
-
-        if ($http_code === 200) break;
+    if ( is_wp_error( $ai_result ) ) {
+        return $ai_result;
     }
 
-    if (is_wp_error($response)) {
-        return new WP_Error('api_error', __('Connection failed: ', 'intellidesc-for-woocommerce') . $response->get_error_message());
-    }
-
-    // ---------------------------------------------------------
-    // 6. HTTP STATUS & JSON PARSING
-    // ---------------------------------------------------------
-
-    if ($http_code !== 200) {
-        $error_data  = json_decode($response_body, true);
-        $api_details = isset($error_data['error']['message']) ? ' — ' . $error_data['error']['message'] : '';
-
-        $status_messages = [
-            400 => __('Bad request. The product title or prompt contains invalid characters.', 'intellidesc-for-woocommerce'),
-            401 => __('Invalid API key. Go to WooCommerce → IntelliDesc and check your Gemini API key.', 'intellidesc-for-woocommerce'),
-            403 => __('Access denied. Your API key does not have permission to use this model. Check billing in Google AI Studio.', 'intellidesc-for-woocommerce'),
-            404 => __('Model not found. The Gemini model may have been renamed or removed. Contact plugin support.', 'intellidesc-for-woocommerce'),
-            429 => __('Rate limit exceeded. You have hit the free tier limit (5–15 requests/min). Wait 60 seconds and try again.', 'intellidesc-for-woocommerce'),
-            500 => __('Gemini API internal error. This is on Google\'s side — try again in a few moments.', 'intellidesc-for-woocommerce'),
-            503 => __('Gemini API is temporarily unavailable (overloaded or maintenance). Try again later.', 'intellidesc-for-woocommerce'),
-        ];
-
-        $message = isset($status_messages[$http_code])
-            ? $status_messages[$http_code]
-            /* translators: %d: HTTP status code */
-            : sprintf(__('Gemini API returned an unexpected error (HTTP %d).', 'intellidesc-for-woocommerce'), $http_code);
-
-        return new WP_Error('api_http_' . $http_code, $message . $api_details);
-    }
-
-    $data = json_decode($response_body, true);
-
-    if (!isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-        $finish_reason = $data['candidates'][0]['finishReason'] ?? '';
-        if ($finish_reason === 'SAFETY') {
-            return new WP_Error('api_safety', __('Gemini blocked the response due to safety filters. Try rephrasing the product title.', 'intellidesc-for-woocommerce'));
-        }
-        if ($finish_reason === 'RECITATION') {
-            return new WP_Error('api_recitation', __('Gemini blocked the response due to recitation policy. Try a more specific product title.', 'intellidesc-for-woocommerce'));
-        }
-        return new WP_Error('api_error', __('Unexpected API response structure. Check your quota at Google AI Studio.', 'intellidesc-for-woocommerce'));
-    }
-
-    $raw_text = $data['candidates'][0]['content']['parts'][0]['text'];
+    $raw_text = $ai_result;
 
     // Robust cleaning
     $clean_json = preg_replace('/^```json\s*|\s*```$/', '', trim($raw_text));
