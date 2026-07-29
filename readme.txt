@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.8
+Stable tag: 1.9.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -126,6 +126,11 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 When using Google Gemini, the plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate, regardless of provider. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 == Changelog ==
+
+= 1.9.0 =
+* New: **Currently active model** status line on the Settings page for every provider (Gemini, Claude, OpenAI, Grok) — shows exactly which model id is saved and its human-readable name, even if it's no longer present in the live model list.
+* New: Warning shown when your selected model starts failing with a "model not found" error (e.g. a provider deprecates or renames a model) — displayed inline in Settings next to the affected provider, and as a dismissible notice on the Settings page and product edit screens.
+* Fixed: Gemini's automatic fallback model was hardcoded to `gemini-2.5-flash`, which Google has since restricted for new accounts — now uses `gemini-3.1-flash-lite`.
 
 = 1.8 =
 * New: **Multi AI Provider Support** — choose between Google Gemini, Anthropic Claude, OpenAI, or xAI Grok as the AI engine behind content generation (WooCommerce → IntelliDesc → AI Provider). Bring your own API key for any provider and switch anytime, at no extra cost.

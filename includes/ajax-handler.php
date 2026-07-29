@@ -221,12 +221,14 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
 
     $ai_result = ildesc_ai_call( $provider, $selected_model, $base_instruction, $api_key, [
         'use_search_tool' => ( $provider === 'gemini' ),
-        'fallback_model'  => ( $provider === 'gemini' ) ? 'gemini-2.5-flash' : '',
+        'fallback_model'  => ( $provider === 'gemini' ) ? 'gemini-3.1-flash-lite' : '',
     ] );
 
     if ( is_wp_error( $ai_result ) ) {
         return $ai_result;
     }
+
+    ildesc_clear_model_unavailable_flag( $provider );
 
     $raw_text = $ai_result;
 

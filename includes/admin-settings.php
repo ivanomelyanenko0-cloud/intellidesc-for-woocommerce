@@ -151,6 +151,74 @@ function ildesc_get_xai_models() {
     return $models;
 }
 
+/**
+ * Renders a small status readout below a provider's model field: the raw
+ * saved model id (resolved to a human label when possible), plus a warning
+ * when it's missing from the freshly-fetched model list or was recently
+ * reported as unavailable by the provider (see ildesc_ai_error_from_response()).
+ */
+function ildesc_render_model_status_notice( $provider, $saved_model, $models ) {
+    echo '<p class="description ildesc-current-model">';
+    echo esc_html__( 'Currently active model:', 'intellidesc-for-woocommerce' ) . ' <code>' . esc_html( $saved_model ) . '</code>';
+    if ( isset( $models[ $saved_model ] ) ) {
+        echo ' — ' . esc_html( $models[ $saved_model ] );
+    } elseif ( ! empty( $models ) ) {
+        echo ' <span class="ildesc-text-danger">(' . esc_html__( 'not found in the latest model list — may be deprecated or renamed', 'intellidesc-for-woocommerce' ) . ')</span>';
+    }
+    echo '</p>';
+
+    $flag = ildesc_get_model_unavailable_flag( $provider );
+    if ( $flag && $flag['model'] === $saved_model ) {
+        echo '<p class="description ildesc-text-danger">' . esc_html( sprintf(
+            /* translators: 1: model id, 2: date, 3: raw API error message */
+            __( 'The model "%1$s" failed with a "model not found" error on %2$s: %3$s. Please select a different model above and save your settings.', 'intellidesc-for-woocommerce' ),
+            $flag['model'],
+            date_i18n( get_option( 'date_format' ), $flag['time'] ),
+            $flag['message']
+        ) ) . '</p>';
+    }
+}
+
+/**
+ * Shows a dismissible admin notice when the currently configured AI model
+ * was recently reported as unavailable (404) by its provider — scoped to
+ * the IntelliDesc settings page and the WooCommerce product edit/list
+ * screens, since those are the places a merchant can act on it.
+ */
+add_action( 'admin_notices', 'ildesc_deprecated_model_admin_notice' );
+function ildesc_deprecated_model_admin_notice() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    $screen = get_current_screen();
+    if ( ! $screen ) {
+        return;
+    }
+
+    $is_relevant_screen = ( strpos( $screen->id, 'ildesc_settings_page' ) !== false )
+        || ( 'product' === $screen->post_type && in_array( $screen->base, [ 'post', 'edit' ], true ) );
+    if ( ! $is_relevant_screen ) {
+        return;
+    }
+
+    $provider = ildesc_get_current_provider();
+    $flag     = ildesc_get_model_unavailable_flag( $provider );
+    if ( ! $flag || $flag['model'] !== ildesc_get_model_for_provider( $provider ) ) {
+        return;
+    }
+
+    printf(
+        '<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+        esc_html( sprintf(
+            /* translators: 1: AI provider name, 2: model id */
+            __( 'IntelliDesc: your selected %1$s model "%2$s" recently failed with a "model not found" error — it may have been deprecated or renamed. Go to WooCommerce → IntelliDesc to pick a different model.', 'intellidesc-for-woocommerce' ),
+            ildesc_ai_provider_label( $provider ),
+            $flag['model']
+        ) )
+    );
+}
+
 function ildesc_register_settings() {
     $option_group = 'ildesc_settings_group';
     $page_slug    = 'ildesc_settings_page';
@@ -557,6 +625,7 @@ function ildesc_settings_page_content() {
                         <p class="description">
                             <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
+                        <?php ildesc_render_model_status_notice( 'gemini', $selected_model, $models ); ?>
                     </td>
                 </tr>
                 <tr valign="top" class="ildesc-provider-row ildesc-provider-row-anthropic" style="display:none;">
@@ -589,6 +658,7 @@ function ildesc_settings_page_content() {
                         <p class="description">
                             <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
+                        <?php ildesc_render_model_status_notice( 'anthropic', $anthropic_model, $models ); ?>
                     </td>
                 </tr>
                 <tr valign="top" class="ildesc-provider-row ildesc-provider-row-openai" style="display:none;">
@@ -621,6 +691,7 @@ function ildesc_settings_page_content() {
                         <p class="description">
                             <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
+                        <?php ildesc_render_model_status_notice( 'openai', $openai_model, $models ); ?>
                     </td>
                 </tr>
                 <tr valign="top" class="ildesc-provider-row ildesc-provider-row-xai" style="display:none;">
@@ -653,6 +724,7 @@ function ildesc_settings_page_content() {
                         <p class="description">
                             <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
+                        <?php ildesc_render_model_status_notice( 'xai', $xai_model, $models ); ?>
                     </td>
                 </tr>
             </table>

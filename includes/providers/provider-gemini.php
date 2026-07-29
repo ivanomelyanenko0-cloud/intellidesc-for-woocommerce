@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function ildesc_ai_call_gemini( $model, $prompt, $api_key, $options = [] ) {
     $timeout         = $options['timeout'] ?? 60;
     $use_search_tool = $options['use_search_tool'] ?? true;
-    $fallback_model  = $options['fallback_model'] ?? 'gemini-2.5-flash';
+    $fallback_model  = $options['fallback_model'] ?? 'gemini-3.1-flash-lite';
 
     $request_body_array = [
         'contents' => [ [ 'role' => 'user', 'parts' => [ [ 'text' => $prompt ] ] ] ],
@@ -58,7 +58,7 @@ function ildesc_ai_call_gemini( $model, $prompt, $api_key, $options = [] ) {
     }
 
     if ( $http_code !== 200 ) {
-        return ildesc_ai_error_from_response( 'gemini', $http_code, $response_body );
+        return ildesc_ai_error_from_response( 'gemini', $http_code, $response_body, $model_attempt );
     }
 
     $data = json_decode( $response_body, true );

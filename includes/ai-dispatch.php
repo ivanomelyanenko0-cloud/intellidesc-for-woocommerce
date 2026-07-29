@@ -64,6 +64,40 @@ function ildesc_ai_provider_label( $provider ) {
 }
 
 /**
+ * Records that a given provider/model combination just failed with a
+ * "model not found" (404) response, so the Settings page can warn about it
+ * even outside the request that triggered the failure.
+ */
+function ildesc_set_model_unavailable_flag( $provider, $model, $message ) {
+    $flags = get_option( ILDESC_MODEL_DEPRECATION_FLAGS, [] );
+    $flags[ $provider ] = [
+        'model'   => $model,
+        'message' => $message,
+        'time'    => time(),
+    ];
+    update_option( ILDESC_MODEL_DEPRECATION_FLAGS, $flags, false );
+}
+
+/**
+ * Returns the recorded unavailable-model flag for a provider, or null.
+ */
+function ildesc_get_model_unavailable_flag( $provider ) {
+    $flags = get_option( ILDESC_MODEL_DEPRECATION_FLAGS, [] );
+    return $flags[ $provider ] ?? null;
+}
+
+/**
+ * Clears a provider's unavailable-model flag, e.g. after a successful call.
+ */
+function ildesc_clear_model_unavailable_flag( $provider ) {
+    $flags = get_option( ILDESC_MODEL_DEPRECATION_FLAGS, [] );
+    if ( isset( $flags[ $provider ] ) ) {
+        unset( $flags[ $provider ] );
+        update_option( ILDESC_MODEL_DEPRECATION_FLAGS, $flags, false );
+    }
+}
+
+/**
  * Dispatches a single-turn text completion request to the given provider.
  *
  * @param string $provider 'gemini' | 'anthropic' | 'openai' | 'xai'.
@@ -91,7 +125,7 @@ function ildesc_ai_call( $provider, $model, $prompt, $api_key, $options = [] ) {
  * Builds a WP_Error with a provider-aware, HTTP-status-specific message.
  * Shared across all provider implementations so error copy stays consistent.
  */
-function ildesc_ai_error_from_response( $provider, $http_code, $response_body ) {
+function ildesc_ai_error_from_response( $provider, $http_code, $response_body, $model = '' ) {
     $label      = ildesc_ai_provider_label( $provider );
     $error_data = json_decode( $response_body, true );
 
@@ -107,6 +141,24 @@ function ildesc_ai_error_from_response( $provider, $http_code, $response_body ) 
     // instead of a misleading "bad request" one.
     if ( $http_code !== 401 && $raw_message && preg_match( '/api key|api_key|authentication|unauthorized/i', $raw_message ) ) {
         $http_code = 401;
+    }
+
+    if ( $http_code === 404 ) {
+        // Record the failure so the Settings page can warn about it even
+        // outside of this one request (see ildesc_get_model_unavailable_flag()).
+        if ( $model !== '' ) {
+            ildesc_set_model_unavailable_flag( $provider, $model, $raw_message );
+        }
+
+        // Google sometimes deprecates a model for new accounts only, while it
+        // stays listed (and still works for older accounts) in the models API —
+        // so our cached model list won't have dropped it. Surface this as an
+        // actionable "pick another model" message instead of the generic 404.
+        if ( $raw_message && preg_match( '/no longer available/i', $raw_message ) ) {
+            /* translators: %s: AI provider name (e.g. Gemini, Claude) */
+            $message = sprintf( __( 'This %s model is no longer available for your account. Go to WooCommerce → IntelliDesc, click "Refresh models", and select a different model from the dropdown.', 'intellidesc-for-woocommerce' ), $label );
+            return new WP_Error( 'api_http_404_model_deprecated', $message . $api_details );
+        }
     }
 
     $generic_messages = [

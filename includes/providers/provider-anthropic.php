@@ -59,7 +59,7 @@ function ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options = [] ) {
     }
 
     if ( $http_code !== 200 ) {
-        return ildesc_ai_error_from_response( 'anthropic', $http_code, $response_body );
+        return ildesc_ai_error_from_response( 'anthropic', $http_code, $response_body, $model_attempt );
     }
 
     $data = json_decode( $response_body, true );

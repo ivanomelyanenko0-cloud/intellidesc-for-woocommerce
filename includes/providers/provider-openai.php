@@ -61,7 +61,7 @@ function ildesc_ai_call_openai_compatible( $base_url, $provider_slug, $model, $p
     }
 
     if ( $http_code !== 200 ) {
-        return ildesc_ai_error_from_response( $provider_slug, $http_code, $response_body );
+        return ildesc_ai_error_from_response( $provider_slug, $http_code, $response_body, $model_attempt );
     }
 
     $data = json_decode( $response_body, true );
