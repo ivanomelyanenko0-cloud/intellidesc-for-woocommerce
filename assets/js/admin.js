@@ -90,7 +90,7 @@ jQuery(document).ready(function($) {
                         return;
                     }
                 } else {
-                    showStatus($output, 'error', ildesc_params.status_error + (response.data.message || 'Unknown'));
+                    showStatus($output, 'error', ildesc_params.status_error + (response.data.message || ildesc_params.unknown_error));
                 }
             },
             error: function(xhr, status, error) {
@@ -139,6 +139,19 @@ jQuery(document).ready(function($) {
         }
     });
 
+    $(document).on('click', '.ildesc-model-advisor-dismiss', function(e) {
+        e.preventDefault();
+        var $notice = $(this).closest('.ildesc-model-advisor');
+        $.post(ildesc_params.ajax_url, {
+            action: 'ildesc_dismiss_model_advisor',
+            nonce: ildesc_params.nonce,
+            provider: $notice.data('provider'),
+            model: $notice.data('model')
+        }, function() {
+            $notice.fadeOut(200, function() { $(this).remove(); });
+        });
+    });
+
     // ==========================================
     // 3. TEMPLATES SETTINGS (Admin Page)
     // ==========================================
@@ -153,7 +166,7 @@ jQuery(document).ready(function($) {
         var $row = $(
             '<tr class="ildesc-template-row ildesc-row-new">' +
             '<td><select name="ildesc_category_templates[' + templateIndex + '][category_id]" class="ildesc-input-wide">' + categoryOptions + '</select></td>' +
-            '<td><input type="text" name="ildesc_category_templates[' + templateIndex + '][features]" class="ildesc-input-wide" placeholder="Processor, RAM..."></td>' +
+            '<td><input type="text" name="ildesc_category_templates[' + templateIndex + '][features]" class="ildesc-input-wide" placeholder="' + ildesc_params.placeholder_features + '"></td>' +
             '<td style="text-align:center"><button type="button" class="button ildesc-remove-template" aria-label="Remove" title="Remove">&#x2715;</button></td>' +
             '</tr>'
         );
@@ -208,7 +221,7 @@ jQuery(document).ready(function($) {
         var eName  = $('<div>').text(name).html();
         var eValue = $('<div>').text(value).html();
         return '<tr class="ildesc-feature-row">' +
-            '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][name]" value="' + eName + '" placeholder="Feature name"></td>' +
+            '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][name]" value="' + eName + '" placeholder="' + ildesc_params.placeholder_feature_name + '"></td>' +
             '<td><input type="text" class="ildesc-input-wide" name="ildesc_feature[' + index + '][value]" value="' + eValue + '" placeholder="Value"></td>' +
             '<td style="text-align:center"><button type="button" class="button ildesc-remove-feature" aria-label="Remove" title="Remove">&#x2715;</button></td>' +
             '</tr>';

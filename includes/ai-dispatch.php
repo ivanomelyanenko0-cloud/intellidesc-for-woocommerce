@@ -98,6 +98,41 @@ function ildesc_clear_model_unavailable_flag( $provider ) {
 }
 
 /**
+ * Returns the id of the model considered "most current" for a provider,
+ * based on the ordering already applied when the model list was fetched
+ * (see ildesc_get_{provider}_models() in admin-settings.php: newest-first
+ * for Anthropic's API order, or a lexical krsort() for the others). This is
+ * a heuristic, not a guaranteed release-date comparison.
+ */
+function ildesc_get_recommended_model( $models ) {
+    if ( empty( $models ) ) {
+        return null;
+    }
+    $keys = array_keys( $models );
+    return $keys[0];
+}
+
+/**
+ * Returns the model id the user has already dismissed the advisor
+ * suggestion for, on this provider (or null if none dismissed yet).
+ */
+function ildesc_get_model_advisor_dismissed( $provider ) {
+    $dismissed = get_option( ILDESC_MODEL_ADVISOR_DISMISSED, [] );
+    return $dismissed[ $provider ] ?? null;
+}
+
+/**
+ * Records that the user dismissed the "a newer model is available"
+ * suggestion for a given provider/model, so it won't be shown again unless
+ * an even newer model later takes the top spot.
+ */
+function ildesc_set_model_advisor_dismissed( $provider, $model ) {
+    $dismissed = get_option( ILDESC_MODEL_ADVISOR_DISMISSED, [] );
+    $dismissed[ $provider ] = $model;
+    update_option( ILDESC_MODEL_ADVISOR_DISMISSED, $dismissed, false );
+}
+
+/**
  * Dispatches a single-turn text completion request to the given provider.
  *
  * @param string $provider 'gemini' | 'anthropic' | 'openai' | 'xai'.

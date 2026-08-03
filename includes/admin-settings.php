@@ -167,8 +167,9 @@ function ildesc_render_model_status_notice( $provider, $saved_model, $models ) {
     }
     echo '</p>';
 
-    $flag = ildesc_get_model_unavailable_flag( $provider );
-    if ( $flag && $flag['model'] === $saved_model ) {
+    $flag        = ildesc_get_model_unavailable_flag( $provider );
+    $flag_active = $flag && $flag['model'] === $saved_model;
+    if ( $flag_active ) {
         echo '<p class="description ildesc-text-danger">' . esc_html( sprintf(
             /* translators: 1: model id, 2: date, 3: raw API error message */
             __( 'The model "%1$s" failed with a "model not found" error on %2$s: %3$s. Please select a different model above and save your settings.', 'intellidesc-for-woocommerce' ),
@@ -176,6 +177,26 @@ function ildesc_render_model_status_notice( $provider, $saved_model, $models ) {
             date_i18n( get_option( 'date_format' ), $flag['time'] ),
             $flag['message']
         ) ) . '</p>';
+    }
+
+    // Model Advisor: suggest switching when a newer model has appeared for
+    // this provider. Suppressed when a 404-deprecation warning is already
+    // showing above (more urgent), or once the user dismissed this exact
+    // suggestion (see ildesc_set_model_advisor_dismissed()).
+    if ( ! $flag_active && ! empty( $models ) ) {
+        $recommended = ildesc_get_recommended_model( $models );
+        if ( $recommended && $recommended !== $saved_model && $recommended !== ildesc_get_model_advisor_dismissed( $provider ) ) {
+            $recommended_label = $models[ $recommended ] ?? $recommended;
+            echo '<p class="description ildesc-model-advisor" data-provider="' . esc_attr( $provider ) . '" data-model="' . esc_attr( $recommended ) . '">';
+            echo esc_html( sprintf(
+                /* translators: %s: recommended model label */
+                __( 'A newer model is available: %s.', 'intellidesc-for-woocommerce' ),
+                $recommended_label
+            ) );
+            echo ' <a href="#ildesc-model-select-' . esc_attr( $provider ) . '">' . esc_html__( 'View in dropdown above', 'intellidesc-for-woocommerce' ) . '</a>';
+            echo ' | <a href="#" class="ildesc-model-advisor-dismiss">' . esc_html__( 'Dismiss', 'intellidesc-for-woocommerce' ) . '</a>';
+            echo '</p>';
+        }
     }
 }
 
@@ -615,7 +636,7 @@ function ildesc_settings_page_content() {
                             echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
                             echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_SELECTED_MODEL ) . '" value="' . esc_attr( $selected_model ) . '" placeholder="gemini-3.1-flash-lite">';
                         } else {
-                            echo '<select name="' . esc_attr( ILDESC_SELECTED_MODEL ) . '">';
+                            echo '<select id="ildesc-model-select-gemini" name="' . esc_attr( ILDESC_SELECTED_MODEL ) . '">';
                             foreach ( $models as $id => $label ) {
                                 echo '<option value="' . esc_attr( $id ) . '" ' . selected( $selected_model, $id, false ) . '>' . esc_html( $label . ' [' . $id . ']' ) . '</option>';
                             }
@@ -648,7 +669,7 @@ function ildesc_settings_page_content() {
                             echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
                             echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_ANTHROPIC_MODEL ) . '" value="' . esc_attr( $anthropic_model ) . '" placeholder="claude-sonnet-4-5-20250929">';
                         } else {
-                            echo '<select name="' . esc_attr( ILDESC_ANTHROPIC_MODEL ) . '">';
+                            echo '<select id="ildesc-model-select-anthropic" name="' . esc_attr( ILDESC_ANTHROPIC_MODEL ) . '">';
                             foreach ( $models as $id => $label ) {
                                 echo '<option value="' . esc_attr( $id ) . '" ' . selected( $anthropic_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
                             }
@@ -681,7 +702,7 @@ function ildesc_settings_page_content() {
                             echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
                             echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_OPENAI_MODEL ) . '" value="' . esc_attr( $openai_model ) . '" placeholder="gpt-4.1-mini">';
                         } else {
-                            echo '<select name="' . esc_attr( ILDESC_OPENAI_MODEL ) . '">';
+                            echo '<select id="ildesc-model-select-openai" name="' . esc_attr( ILDESC_OPENAI_MODEL ) . '">';
                             foreach ( $models as $id => $label ) {
                                 echo '<option value="' . esc_attr( $id ) . '" ' . selected( $openai_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
                             }
@@ -714,7 +735,7 @@ function ildesc_settings_page_content() {
                             echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
                             echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_XAI_MODEL ) . '" value="' . esc_attr( $xai_model ) . '" placeholder="grok-4-fast">';
                         } else {
-                            echo '<select name="' . esc_attr( ILDESC_XAI_MODEL ) . '">';
+                            echo '<select id="ildesc-model-select-xai" name="' . esc_attr( ILDESC_XAI_MODEL ) . '">';
                             foreach ( $models as $id => $label ) {
                                 echo '<option value="' . esc_attr( $id ) . '" ' . selected( $xai_model, $id, false ) . '>' . esc_html( $label ) . '</option>';
                             }

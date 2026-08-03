@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.0
+ * Version:           1.9.1
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -36,6 +36,7 @@ define( 'ILDESC_OPENAI_MODEL',      'ildesc_openai_model' );
 define( 'ILDESC_XAI_API_KEY',       'ildesc_xai_api_key' );
 define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
 define( 'ILDESC_MODEL_DEPRECATION_FLAGS', 'ildesc_model_deprecation_flags' );
+define( 'ILDESC_MODEL_ADVISOR_DISMISSED', 'ildesc_model_advisor_dismissed' );
 
 
 // Enqueue Assets (Unified function)
@@ -75,6 +76,10 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'bulk_failed'     => __( 'Failed', 'intellidesc-for-woocommerce' ),
         'close_btn'       => __( 'Close', 'intellidesc-for-woocommerce' ),
         'stop_btn'        => __( 'Stop', 'intellidesc-for-woocommerce' ),
+        'confirm_clear'   => __( 'Are you sure you want to clear the short description?', 'intellidesc-for-woocommerce' ),
+        'unknown_error'   => __( 'Unknown', 'intellidesc-for-woocommerce' ),
+        'placeholder_features'    => __( 'Processor, RAM...', 'intellidesc-for-woocommerce' ),
+        'placeholder_feature_name' => __( 'Feature name', 'intellidesc-for-woocommerce' ),
     ) );
 }
 add_action( 'admin_enqueue_scripts', 'ildesc_enqueue_admin_assets' );

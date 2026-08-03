@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.9.0
+Stable tag: 1.9.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -74,7 +74,7 @@ Depending on which provider you select, the plugin talks to one of the following
 
 ### PRO FEATURES (Available on our website)
 
-Upgrade to Pro for advanced workflow automation and deeper WooCommerce integration. Visit [freemius](https://checkout.freemius.com/plugin/23001/plan/38599/) for details.
+Upgrade to Pro for advanced workflow automation and deeper WooCommerce integration. Visit [our website](https://cognitolab.net/products/intellidesc-wordpress) for details.
 
 * **Native WooCommerce Attributes:** Automatically creates real, filterable Global Attributes instead of just visual tables.
 * **Bulk Generation (Smart Queue):** Select 50+ products in the list and let the AI process them in the background without timeouts.
@@ -113,6 +113,9 @@ Prefer a different provider? Get your API key from [Anthropic Console](https://c
 = Which AI providers does this plugin support? =
 Google Gemini, Anthropic Claude, OpenAI, and xAI Grok. Pick any of them under WooCommerce → IntelliDesc and supply your own API key — no vendor lock-in.
 
+= I'm using xAI Grok — does it fully work? =
+Grok support is newer than our Gemini/Claude/OpenAI integrations. It should work the same way, but if you're using it, we'd love to hear how it's going — please leave a review or a note in the support forum letting us know it works for you (or if you hit an issue).
+
 = Is the API free? =
 It depends on the provider. Google currently offers a generous free tier for the Gemini Flash models (5–15 requests/minute depending on the model version), which is sufficient for most stores. Anthropic, OpenAI, and xAI are pay-as-you-go. Heavy usage may require a paid plan directly from your chosen provider.
 
@@ -126,6 +129,12 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 When using Google Gemini, the plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate, regardless of provider. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 == Changelog ==
+
+= 1.9.1 =
+* New: **Model Advisor** — the Settings page now suggests when a newer model has become available for your currently configured AI provider, with a one-click dismiss.
+* New: Added translations — Ukrainian, Polish, German, French, Spanish, and Italian.
+* Fixed: A few UI strings (clear-description confirmation, error fallback text, feature-table placeholders) weren't passed through translation.
+* Improved: Updated the link to our website in this readme.
 
 = 1.9.0 =
 * New: **Currently active model** status line on the Settings page for every provider (Gemini, Claude, OpenAI, Grok) — shows exactly which model id is saved and its human-readable name, even if it's no longer present in the live model list.

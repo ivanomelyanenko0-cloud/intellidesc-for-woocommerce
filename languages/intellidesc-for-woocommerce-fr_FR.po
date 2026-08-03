@@ -1,0 +1,509 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: IntelliDesc for WooCommerce 1.9.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-03T05:57:56+00:00\n"
+"PO-Revision-Date: 2026-08-03T05:57:56+00:00\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: intellidesc-manual-i18n\n"
+"X-Domain: intellidesc-for-woocommerce\n"
+
+#. translators: 1: AI provider name, 2: HTTP status code
+#: ai-dispatch.php:219
+msgid "%1$s returned an unexpected error (HTTP %2$d)."
+msgstr "%1$s a renvoyé une erreur inattendue (HTTP %2$d)."
+
+#: ajax-handler.php:74
+msgid "%s API Key is missing."
+msgstr "La clé API %s est manquante."
+
+#: ai-dispatch.php:211
+msgid "%s internal server error. Try again in a few moments."
+msgstr "Erreur interne du serveur %s. Réessayez dans quelques instants."
+
+#: ai-dispatch.php:213
+msgid "%s is temporarily unavailable (overloaded or maintenance)."
+msgstr "%s est temporairement indisponible (surcharge ou maintenance)."
+
+#: ai-dispatch.php:209
+msgid "%s rate limit exceeded. Wait a moment and try again."
+msgstr "Limite de requêtes de %s dépassée. Patientez un instant puis réessayez."
+
+#: admin-settings.php:569
+msgid "<strong>Free tier:</strong> 5–15 requests/minute, ~1,500/day. Paid: 1,000+ RPM, unlimited."
+msgstr "<strong>Offre gratuite :</strong> 5 à 15 requêtes/min, ~1500/jour. Payant : 1000+ RPM, illimité."
+
+#. translators: %s: recommended model label
+#: admin-settings.php:193
+msgid "A newer model is available: %s."
+msgstr "Un modèle plus récent est disponible : %s."
+
+#: intellidesc-for-woocommerce.php:100
+msgid "AI Actions"
+msgstr "Actions IA"
+
+#: intellidesc-for-woocommerce.php:108
+msgid "AI Features (Edit)"
+msgstr "Caractéristiques IA (Modifier)"
+
+#: admin-settings.php:629
+msgid "AI Model"
+msgstr "Modèle IA"
+
+#: admin-settings.php:610
+msgid "AI Provider"
+msgstr "Fournisseur IA"
+
+#: ai-dispatch.php:205
+msgid "Access denied by %s. Check your account permissions/billing."
+msgstr "Accès refusé par %s. Vérifiez les autorisations de votre compte/facturation."
+
+#: intellidesc-for-woocommerce.php:162
+msgid "Action"
+msgstr "Action"
+
+#: intellidesc-for-woocommerce.php:189
+msgid "Add Feature"
+msgstr "Ajouter une caractéristique"
+
+#: admin-settings.php:474
+msgid "Add Template"
+msgstr "Ajouter un modèle"
+
+#: admin-settings.php:407
+msgid "Add Unit Rule"
+msgstr "Ajouter une règle d'unité"
+
+#: admin-settings.php:597
+msgid "Add billing credit to your account."
+msgstr "Ajoutez du crédit à votre compte."
+
+#: admin-settings.php:577 admin-settings.php:587
+msgid "Add billing credit under Settings → Billing."
+msgstr "Ajoutez du crédit dans Settings → Billing."
+
+#: admin-settings.php:653
+msgid "Anthropic API Key"
+msgstr "Clé API Anthropic"
+
+#: admin-settings.php:573 admin-settings.php:615
+msgid "Anthropic Claude"
+msgstr "Anthropic Claude"
+
+#: intellidesc-for-woocommerce.php:79
+msgid "Are you sure you want to clear the short description?"
+msgstr "Voulez-vous vraiment effacer la description courte ?"
+
+#: admin-settings.php:799
+msgid "Automatically generate Yoast/RankMath Meta Titles and Descriptions."
+msgstr "Génère automatiquement les méta-titres et descriptions Yoast/RankMath."
+
+#: ai-dispatch.php:201
+msgid "Bad request to %s. The product title or prompt contains invalid characters."
+msgstr "Requête invalide vers %s. Le titre du produit ou le prompt contient des caractères non valides."
+
+#: admin-settings.php:798
+msgid "Bulk Generation Mode:"
+msgstr "Mode de génération en masse :"
+
+#: admin-settings.php:619
+msgid "Choose which AI provider generates your product content."
+msgstr "Choisissez le fournisseur IA qui génère le contenu de vos produits."
+
+#: admin-settings.php:662
+msgid "Claude Model"
+msgstr "Modèle Claude"
+
+#: intellidesc-for-woocommerce.php:153
+msgid "Clear Short Description"
+msgstr "Effacer la description courte"
+
+#: admin-settings.php:566
+msgid "Click <strong>\"Create API Key\"</strong>."
+msgstr "Cliquez sur <strong>« Create API Key »</strong>."
+
+#: admin-settings.php:586
+msgid "Click <strong>\"Create new secret key\"</strong>."
+msgstr "Cliquez sur <strong>« Create new secret key »</strong>."
+
+#: intellidesc-for-woocommerce.php:77
+msgid "Close"
+msgstr "Fermer"
+
+#: intellidesc-for-woocommerce.php:71
+msgid "Completed! Refreshing page..."
+msgstr "Terminé ! Actualisation de la page..."
+
+#: provider-anthropic.php:58 provider-gemini.php:57 provider-openai.php:60
+msgid "Connection failed: "
+msgstr "Échec de la connexion : "
+
+#: admin-settings.php:764
+msgid "Content Generation"
+msgstr "Génération de contenu"
+
+#: ajax-handler.php:322
+msgid "Content generated successfully!"
+msgstr "Contenu généré avec succès !"
+
+#: admin-settings.php:162
+msgid "Currently active model:"
+msgstr "Modèle actuellement actif :"
+
+#: admin-settings.php:800
+msgid "Customize the AI personality and use presets for Fashion, Tech, or Automotive niches."
+msgstr "Personnalisez la personnalité de l'IA et utilisez des préréglages pour les niches Mode, Tech ou Automobile."
+
+#: admin-settings.php:355
+msgid "Define mandatory features that the AI should look for specific WooCommerce categories."
+msgstr "Définissez les caractéristiques obligatoires que l'IA doit rechercher pour des catégories WooCommerce spécifiques."
+
+#: admin-settings.php:359
+msgid "Define the exact unit or format the AI must use when outputting specific feature values. For example: \"Battery Capacity\" → \"mAh\" will force the AI to always output battery values as \"5000 mAh\"."
+msgstr "Définissez l'unité ou le format exact que l'IA doit utiliser pour des valeurs de caractéristiques spécifiques. Par exemple : \"Battery Capacity\" → \"mAh\" forcera l'IA à toujours afficher les valeurs de batterie sous la forme \"5000 mAh\"."
+
+#: intellidesc-for-woocommerce.php:151
+msgid "Description Tools:"
+msgstr "Outils de description :"
+
+#: admin-settings.php:197
+msgid "Dismiss"
+msgstr "Ignorer"
+
+#: intellidesc-for-woocommerce.php:72
+msgid "Error: "
+msgstr "Erreur : "
+
+#: intellidesc-for-woocommerce.php:76
+msgid "Failed"
+msgstr "Échec"
+
+#: admin-settings.php:373 intellidesc-for-woocommerce.php:160
+msgid "Feature Name"
+msgstr "Nom de la caractéristique"
+
+#: admin-settings.php:292
+msgid "Feature Templates Settings"
+msgstr "Paramètres des modèles de caractéristiques"
+
+#: admin-settings.php:314
+msgid "Feature Units"
+msgstr "Unités de caractéristiques"
+
+#: intellidesc-for-woocommerce.php:82
+msgid "Feature name"
+msgstr "Nom de la caractéristique"
+
+#: admin-settings.php:623
+msgid "Gemini API Key"
+msgstr "Clé API Gemini"
+
+#: provider-gemini.php:72
+msgid "Gemini blocked the response due to recitation policy. Try a more specific product title."
+msgstr "Gemini a bloqué la réponse en raison de la politique de citation. Essayez un titre de produit plus précis."
+
+#: provider-gemini.php:69
+msgid "Gemini blocked the response due to safety filters. Try rephrasing the product title."
+msgstr "Gemini a bloqué la réponse en raison des filtres de sécurité. Essayez de reformuler le titre du produit."
+
+#: intellidesc-for-woocommerce.php:122
+msgid "Generate AI descriptions and technical specs based on the product title."
+msgstr "Générez des descriptions IA et des spécifications techniques à partir du titre du produit."
+
+#: intellidesc-for-woocommerce.php:68 intellidesc-for-woocommerce.php:126
+msgid "Generate Content"
+msgstr "Générer le contenu"
+
+#: admin-settings.php:779
+msgid "Generate Descriptions Only"
+msgstr "Générer uniquement les descriptions"
+
+#: intellidesc-for-woocommerce.php:69
+msgid "Generating..."
+msgstr "Génération en cours..."
+
+#: admin-settings.php:657 admin-settings.php:690 admin-settings.php:723
+msgid "Get your key from"
+msgstr "Obtenez votre clé sur"
+
+#: admin-settings.php:565 admin-settings.php:575 admin-settings.php:585 admin-settings.php:595
+msgid "Go to"
+msgstr "Allez sur"
+
+#: admin-settings.php:563 admin-settings.php:614
+msgid "Google Gemini"
+msgstr "Google Gemini"
+
+#: admin-settings.php:728
+msgid "Grok Model"
+msgstr "Modèle Grok"
+
+#: admin-settings.php:553
+msgid "How to get an API Key & Pricing (Read First)"
+msgstr "Comment obtenir une clé API et tarifs (à lire en premier)"
+
+#: admin-settings.php:783
+msgid "If checked, the AI will only generate the Short and Long Descriptions. Feature extraction (technical specs table) will be skipped."
+msgstr "Si coché, l'IA générera uniquement les descriptions courte et longue. L'extraction des caractéristiques (tableau des spécifications techniques) sera ignorée."
+
+#: ajax-handler.php:20 ajax-handler.php:43
+msgid "Insufficient permissions."
+msgstr "Autorisations insuffisantes."
+
+#: admin-settings.php:533
+msgid "IntelliDesc"
+msgstr "IntelliDesc"
+
+#: admin-settings.php:532
+msgid "IntelliDesc Settings"
+msgstr "Paramètres IntelliDesc"
+
+#: admin-settings.php:545
+msgid "IntelliDesc for WooCommerce"
+msgstr "IntelliDesc for WooCommerce"
+
+#. translators: 1: AI provider name, 2: model id
+#: admin-settings.php:236
+msgid "IntelliDesc: your selected %1$s model \"%2$s\" recently failed with a \"model not found\" error — it may have been deprecated or renamed. Go to WooCommerce → IntelliDesc to pick a different model."
+msgstr "IntelliDesc : votre modèle %1$s sélectionné \"%2$s\" a récemment échoué avec une erreur « modèle introuvable » — il a peut-être été supprimé ou renommé. Allez dans WooCommerce → IntelliDesc pour choisir un autre modèle."
+
+#: ai-dispatch.php:203
+msgid "Invalid %s API key. Go to WooCommerce → IntelliDesc and check your API key."
+msgstr "Clé API %s invalide. Allez dans WooCommerce → IntelliDesc et vérifiez votre clé API."
+
+#: ajax-handler.php:50
+msgid "Invalid product data."
+msgstr "Données produit invalides."
+
+#: ajax-handler.php:28
+msgid "Invalid request."
+msgstr "Requête invalide."
+
+#: admin-settings.php:504
+msgid "Key is set"
+msgstr "Clé définie"
+
+#: admin-settings.php:767
+msgid "Language"
+msgstr "Langue"
+
+#: admin-settings.php:607
+msgid "Main API Settings"
+msgstr "Paramètres API principaux"
+
+#: admin-settings.php:438
+msgid "Mandatory Features (comma separated)"
+msgstr "Caractéristiques obligatoires (séparées par des virgules)"
+
+#: ai-dispatch.php:207
+msgid "Model not found on %s. It may have been renamed or removed."
+msgstr "Modèle introuvable sur %s. Il a peut-être été renommé ou supprimé."
+
+#: admin-settings.php:797
+msgid "Native WooCommerce Attributes:"
+msgstr "Attributs WooCommerce natifs :"
+
+#: intellidesc-for-woocommerce.php:65
+msgid "No products selected!"
+msgstr "Aucun produit sélectionné !"
+
+#: admin-settings.php:509
+msgid "Not configured"
+msgstr "Non configuré"
+
+#: admin-settings.php:596
+msgid "Open <strong>API Keys</strong> and create a new key."
+msgstr "Ouvrez <strong>API Keys</strong> et créez une nouvelle clé."
+
+#: admin-settings.php:576
+msgid "Open <strong>Settings → API Keys</strong> and click \"Create Key\"."
+msgstr "Ouvrez <strong>Settings → API Keys</strong> et cliquez sur « Create Key »."
+
+#: admin-settings.php:583 admin-settings.php:616
+msgid "OpenAI"
+msgstr "OpenAI"
+
+#: admin-settings.php:686
+msgid "OpenAI API Key"
+msgstr "Clé API OpenAI"
+
+#: admin-settings.php:695
+msgid "OpenAI Model"
+msgstr "Modèle OpenAI"
+
+#: admin-settings.php:579 admin-settings.php:589 admin-settings.php:599
+msgid "Pay-as-you-go — no free tier. Requires a paid credit balance."
+msgstr "Paiement à l'usage — pas d'offre gratuite. Nécessite un solde de crédit payant."
+
+#: admin-settings.php:559
+msgid "Pick one AI provider below, grab an API key from it, then select that provider in the form under \"Main API Settings\"."
+msgstr "Choisissez un fournisseur IA ci-dessous, obtenez-y une clé API, puis sélectionnez ce fournisseur dans le formulaire sous « Main API Settings »."
+
+#: intellidesc-for-woocommerce.php:64
+msgid "Please enter a product title first."
+msgstr "Veuillez d'abord saisir un titre de produit."
+
+#: admin-settings.php:636 admin-settings.php:669 admin-settings.php:702 admin-settings.php:735
+msgid "Please save a valid API Key first to fetch available models."
+msgstr "Enregistrez d'abord une clé API valide pour récupérer les modèles disponibles."
+
+#: admin-settings.php:798
+msgid "Process 50+ products at once with our Smart Queue system (no server timeouts)."
+msgstr "Traitez 50+ produits à la fois grâce à notre système Smart Queue (sans délai d'expiration serveur)."
+
+#: intellidesc-for-woocommerce.php:74
+msgid "Processing"
+msgstr "Traitement"
+
+#: intellidesc-for-woocommerce.php:131
+msgid "Processing..."
+msgstr "Traitement en cours..."
+
+#: intellidesc-for-woocommerce.php:81
+msgid "Processor, RAM..."
+msgstr "Processeur, RAM..."
+
+#: admin-settings.php:647 admin-settings.php:680 admin-settings.php:713 admin-settings.php:746
+msgid "Refresh model list"
+msgstr "Actualiser la liste des modèles"
+
+#: admin-settings.php:397 admin-settings.php:398 admin-settings.php:464 admin-settings.php:465 intellidesc-for-woocommerce.php:179
+msgid "Remove"
+msgstr "Supprimer"
+
+#: intellidesc-for-woocommerce.php:75
+msgid "Retry"
+msgstr "Réessayer"
+
+#: admin-settings.php:799
+msgid "SEO Meta Optimization:"
+msgstr "Optimisation méta SEO :"
+
+#: admin-settings.php:797
+msgid "Save generated features as real, filterable global attributes."
+msgstr "Enregistrez les caractéristiques générées comme attributs globaux réels et filtrables."
+
+#: admin-settings.php:567
+msgid "Select \"Create API key in new project\" and copy it."
+msgstr "Sélectionnez « Create API key in new project » et copiez-la."
+
+#: intellidesc-for-woocommerce.php:67
+msgid "Sending request to AI..."
+msgstr "Envoi de la requête à l'IA..."
+
+#: intellidesc-for-woocommerce.php:73
+msgid "Server connection failed."
+msgstr "Échec de la connexion au serveur."
+
+#: admin-settings.php:498
+msgid "Show / Hide key"
+msgstr "Afficher / masquer la clé"
+
+#: intellidesc-for-woocommerce.php:66
+msgid "Start generation for selected products?"
+msgstr "Démarrer la génération pour les produits sélectionnés ?"
+
+#: intellidesc-for-woocommerce.php:78
+msgid "Stop"
+msgstr "Arrêter"
+
+#: intellidesc-for-woocommerce.php:70
+msgid "Success! Data saved."
+msgstr "Succès ! Données enregistrées."
+
+#: admin-settings.php:794
+msgid "Take your store automation to the next level. The PRO version includes:"
+msgstr "Faites passer l'automatisation de votre boutique au niveau supérieur. La version PRO inclut :"
+
+#: admin-settings.php:299
+msgid "Templates by Category"
+msgstr "Modèles par catégorie"
+
+#. translators: 1: model id, 2: date, 3: raw API error message
+#: admin-settings.php:175
+msgid "The model \"%1$s\" failed with a \"model not found\" error on %2$s: %3$s. Please select a different model above and save your settings."
+msgstr "Le modèle \"%1$s\" a échoué avec une erreur « modèle introuvable » le %2$s : %3$s. Veuillez sélectionner un autre modèle ci-dessus et enregistrer vos paramètres."
+
+#: ai-dispatch.php:194
+msgid "This %s model is no longer available for your account. Go to WooCommerce → IntelliDesc, click \"Refresh models\", and select a different model from the dropdown."
+msgstr "Ce modèle %s n'est plus disponible pour votre compte. Allez dans WooCommerce → IntelliDesc, cliquez sur « Refresh models » et sélectionnez un autre modèle dans la liste."
+
+#: admin-settings.php:800
+msgid "Tone of Voice & Presets:"
+msgstr "Ton de la voix & préréglages :"
+
+#: provider-openai.php:71
+msgid "Unexpected API response structure from %s."
+msgstr "Structure de réponse API inattendue de %s."
+
+#: provider-anthropic.php:68
+msgid "Unexpected API response structure from Claude."
+msgstr "Structure de réponse API inattendue de Claude."
+
+#: provider-gemini.php:74
+msgid "Unexpected API response structure. Check your quota at Google AI Studio."
+msgstr "Structure de réponse API inattendue. Vérifiez votre quota sur Google AI Studio."
+
+#: admin-settings.php:374
+msgid "Unit / Format"
+msgstr "Unité / Format"
+
+#: admin-settings.php:307
+msgid "Unit Rules"
+msgstr "Règles d'unité"
+
+#: intellidesc-for-woocommerce.php:80
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: admin-settings.php:792
+msgid "Unlock Advanced Features with IntelliDesc PRO"
+msgstr "Débloquez des fonctionnalités avancées avec IntelliDesc PRO"
+
+#: admin-settings.php:804
+msgid "Upgrade to PRO Version"
+msgstr "Passer à la version PRO"
+
+#: intellidesc-for-woocommerce.php:161
+msgid "Value"
+msgstr "Valeur"
+
+#: admin-settings.php:196
+msgid "View in dropdown above"
+msgstr "Voir dans la liste ci-dessus"
+
+#: admin-settings.php:437
+msgid "WooCommerce Category"
+msgstr "Catégorie WooCommerce"
+
+#: admin-settings.php:518
+msgid "WordPress Default Language"
+msgstr "Langue par défaut de WordPress"
+
+#: admin-settings.php:386
+msgid "e.g. Battery Capacity"
+msgstr "ex. Battery Capacity"
+
+#: admin-settings.php:393
+msgid "e.g. mAh"
+msgstr "ex. mAh"
+
+#: admin-settings.php:166
+msgid "not found in the latest model list — may be deprecated or renamed"
+msgstr "introuvable dans la dernière liste de modèles — peut-être obsolète ou renommé"
+
+#: admin-settings.php:719
+msgid "xAI API Key"
+msgstr "Clé API xAI"
+
+#: admin-settings.php:593 admin-settings.php:617
+msgid "xAI Grok"
+msgstr "xAI Grok"
+
+#: admin-settings.php:423 admin-settings.php:448
+msgid "— Select Category —"
+msgstr "— Sélectionner une catégorie —"

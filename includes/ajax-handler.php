@@ -6,6 +6,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 add_action('wp_ajax_ildesc_autocomplete_features', 'ildesc_handle_autocomplete_features');
+add_action('wp_ajax_ildesc_dismiss_model_advisor', 'ildesc_handle_dismiss_model_advisor');
+
+/**
+ * Records that the merchant dismissed the "a newer model is available"
+ * suggestion for a given provider, so it stops showing on the Settings page
+ * until an even newer model takes the top spot.
+ */
+function ildesc_handle_dismiss_model_advisor() {
+    check_ajax_referer( 'ildesc_autocomplete_nonce', 'nonce' );
+
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    $provider         = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : '';
+    $model            = isset( $_POST['model'] )    ? sanitize_text_field( wp_unslash( $_POST['model'] ) )    : '';
+    $valid_providers  = array( 'gemini', 'anthropic', 'openai', 'xai' );
+
+    if ( ! in_array( $provider, $valid_providers, true ) || empty( $model ) ) {
+        wp_send_json_error( array( 'message' => __( 'Invalid request.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    ildesc_set_model_advisor_dismissed( $provider, $model );
+
+    wp_send_json_success();
+}
 
 /**
  * Main AJAX Handler Wrapper
