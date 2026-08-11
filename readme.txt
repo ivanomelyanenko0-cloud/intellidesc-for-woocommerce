@@ -16,7 +16,7 @@ AI product description generator for WooCommerce. Auto-write SEO product descrip
 
 Stop writing product descriptions by hand. Whether your catalog has 10 SKUs or 10,000, IntelliDesc automates the most repetitive part of running a store. It doesn't just generate filler text: its Smart Specs Extractor researches the product and pulls out real technical details (Processor, Material, Dimensions, Battery Capacity, and more) into a clean, structured feature list.
 
-**[Try the live demo](https://founder.cognitolab.net/demo/index.htm)** — generate a real description right in your browser, no install or API key needed.
+**[Try the live demo](https://founder.cognitolab.net/demo/index.html)** — generate a real description right in your browser, no install or API key needed.
 
 = Choose your own AI provider =
 
