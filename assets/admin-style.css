@@ -544,6 +544,10 @@ details[open] .ildesc-info-header {
     color: #3c434a;
 }
 
+.ildesc-pro-banner .button + .button {
+    margin-left: 8px;
+}
+
 .ildesc-pro-list li::before {
     content: '✓';
     position: absolute;

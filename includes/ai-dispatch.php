@@ -51,6 +51,26 @@ function ildesc_get_model_for_provider( $provider ) {
 }
 
 /**
+ * Returns a known-good fallback model id for the given provider, used to
+ * retry a request when the user's configured model 404s (e.g. deprecated or
+ * mistyped). Mirrors the same literals used as ildesc_get_model_for_provider()'s
+ * defaults, since those are already the plugin's vetted "safe" choice per provider.
+ */
+function ildesc_get_fallback_model_for_provider( $provider ) {
+    switch ( $provider ) {
+        case 'anthropic':
+            return 'claude-sonnet-4-5-20250929';
+        case 'openai':
+            return 'gpt-4.1-mini';
+        case 'xai':
+            return 'grok-4-fast';
+        case 'gemini':
+        default:
+            return 'gemini-3.1-flash-lite';
+    }
+}
+
+/**
  * Human-readable provider name for use in messages/labels.
  */
 function ildesc_ai_provider_label( $provider ) {

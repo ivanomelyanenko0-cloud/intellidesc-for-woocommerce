@@ -24,7 +24,7 @@ function ildesc_get_gemini_models() {
     if ( empty( $body['models'] ) ) return [];
 
     $models    = [];
-    $blacklist = [ 'nano', 'embedding', 'tts', 'aqa', 'vision', 'preview', 'Experimental', 'exp', 'image', 'img' ];
+    $blacklist = [ 'nano', 'embedding', 'tts', 'aqa', 'vision', 'preview', 'Experimental', 'exp', 'image', 'img', 'audio', 'live' ];
 
     foreach ( $body['models'] as $model ) {
         $name = $model['name'];
@@ -65,9 +65,15 @@ function ildesc_get_anthropic_models() {
     $body = json_decode( wp_remote_retrieve_body( $response ), true );
     if ( empty( $body['data'] ) ) return [];
 
-    $models = [];
+    $models    = [];
+    $blacklist = [ 'embedding', 'tts', 'audio', 'image', 'video', 'voice', 'speech', 'transcribe', 'moderation' ];
+
     foreach ( $body['data'] as $model ) {
-        $models[ $model['id'] ] = $model['display_name'] ?? $model['id'];
+        $id = $model['id'];
+        foreach ( $blacklist as $bad ) {
+            if ( strpos( $id, $bad ) !== false ) continue 2;
+        }
+        $models[ $id ] = $model['display_name'] ?? $id;
     }
 
     set_transient( 'ildesc_anthropic_models_list', $models, 86400 );
@@ -97,7 +103,7 @@ function ildesc_get_openai_models() {
 
     $models            = [];
     $allowed_prefixes  = [ 'gpt-', 'o1', 'o3', 'o4', 'chatgpt-' ];
-    $blacklist         = [ 'whisper', 'tts', 'dall-e', 'embedding', 'moderation', 'davinci', 'babbage', 'audio', 'realtime', 'transcribe', 'image', 'search', 'similarity', 'edit', 'insert', 'instruct' ];
+    $blacklist         = [ 'whisper', 'tts', 'dall-e', 'embedding', 'moderation', 'davinci', 'babbage', 'audio', 'realtime', 'transcribe', 'image', 'search', 'similarity', 'edit', 'insert', 'instruct', 'sora', 'video' ];
 
     foreach ( $body['data'] as $model ) {
         $id = $model['id'];
@@ -141,9 +147,15 @@ function ildesc_get_xai_models() {
     $body = json_decode( wp_remote_retrieve_body( $response ), true );
     if ( empty( $body['data'] ) ) return [];
 
-    $models = [];
+    $models    = [];
+    $blacklist = [ 'image', 'img', 'audio', 'tts', 'voice', 'speech', 'video', 'embedding', 'transcribe', 'realtime' ];
+
     foreach ( $body['data'] as $model ) {
-        $models[ $model['id'] ] = $model['id'];
+        $id = $model['id'];
+        foreach ( $blacklist as $bad ) {
+            if ( strpos( $id, $bad ) !== false ) continue 2;
+        }
+        $models[ $id ] = $id;
     }
 
     krsort( $models );
@@ -802,6 +814,9 @@ function ildesc_settings_page_content() {
 
                 <a href="https://checkout.freemius.com/plugin/23001/plan/38599/" target="_blank" class="button button-primary">
                     <?php esc_html_e( 'Upgrade to PRO Version', 'intellidesc-for-woocommerce' ); ?>
+                </a>
+                <a href="https://founder.cognitolab.net/demo-pro/index.html" target="_blank" class="button">
+                    <?php esc_html_e( 'Try PRO Live Demo', 'intellidesc-for-woocommerce' ); ?>
                 </a>
             </div>
             <?php submit_button(); ?>

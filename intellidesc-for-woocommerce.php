@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.1
+ * Version:           1.9.2
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later

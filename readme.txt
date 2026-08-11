@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -15,6 +15,8 @@ AI product description generator for WooCommerce. Auto-write SEO product descrip
 **IntelliDesc for WooCommerce** is an AI product description generator built specifically for WooCommerce. Give it a product title and it writes a complete, SEO-friendly listing — a short description, a long description, and a clean technical specifications table — in seconds.
 
 Stop writing product descriptions by hand. Whether your catalog has 10 SKUs or 10,000, IntelliDesc automates the most repetitive part of running a store. It doesn't just generate filler text: its Smart Specs Extractor researches the product and pulls out real technical details (Processor, Material, Dimensions, Battery Capacity, and more) into a clean, structured feature list.
+
+**[Try the live demo](https://founder.cognitolab.net/demo/index.htm)** — generate a real description right in your browser, no install or API key needed.
 
 = Choose your own AI provider =
 
@@ -74,7 +76,7 @@ Depending on which provider you select, the plugin talks to one of the following
 
 ### PRO FEATURES (Available on our website)
 
-Upgrade to Pro for advanced workflow automation and deeper WooCommerce integration. Visit [our website](https://cognitolab.net/products/intellidesc-wordpress) for details.
+Upgrade to Pro for advanced workflow automation and deeper WooCommerce integration. Visit [our website](https://cognitolab.net/products/intellidesc-wordpress) for details, or [try the Pro live demo](https://founder.cognitolab.net/demo-pro/index.html) directly.
 
 * **Native WooCommerce Attributes:** Automatically creates real, filterable Global Attributes instead of just visual tables.
 * **Bulk Generation (Smart Queue):** Select 50+ products in the list and let the AI process them in the background without timeouts.
@@ -129,6 +131,11 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 When using Google Gemini, the plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate, regardless of provider. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 == Changelog ==
+
+= 1.9.2 =
+* Fixed: The automatic fallback model (used to retry once when your selected model returns a "not found" error) was only ever set for Google Gemini — Claude, OpenAI, and Grok requests had no fallback and simply failed. Every provider now retries against its own known-good fallback model.
+* Fixed: The Anthropic and xAI model lists could include non-chat models (e.g. image-generation models) since those two providers had no filtering. All four providers' model lists are now restricted to text/vision chat-completion models only.
+* Added: Live demo links (Free and Pro) in this readme and in the Pro upsell banner on the Settings page.
 
 = 1.9.1 =
 * New: **Model Advisor** — the Settings page now suggests when a newer model has become available for your currently configured AI provider, with a one-click dismiss.
