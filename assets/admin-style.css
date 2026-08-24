@@ -566,3 +566,74 @@ details[open] .ildesc-info-header {
 .ildesc-text-small-muted { font-size: 11px; color: #8c8f94; margin-top: 2px; }
 .ildesc-text-success   { color: var(--ildesc-success); }
 .ildesc-text-error     { color: var(--ildesc-error); }
+
+/* ============================================
+   DUPLICATE SCAN MODAL
+   ============================================ */
+
+.ildesc-modal-overlay {
+    position: fixed;
+    z-index: 100000;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+.ildesc-modal-content {
+    background: #fff;
+    padding: 28px 30px;
+    width: 620px;
+    max-width: 92%;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+    position: relative;
+}
+
+.ildesc-modal-title {
+    margin: 0 0 18px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--ildesc-text);
+}
+
+.ildesc-progress-wrapper {
+    background: var(--ildesc-bg);
+    height: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 0 16px;
+    border: 1px solid var(--ildesc-border);
+}
+
+.ildesc-progress-bar {
+    background: linear-gradient(90deg, var(--ildesc-brand-from), var(--ildesc-brand-to));
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s linear;
+}
+
+.ildesc-log-window {
+    height: 180px;
+    background: #1d2327;
+    color: #f0f0f1;
+    font-family: Consolas, Monaco, monospace;
+    padding: 12px 14px;
+    overflow-y: auto;
+    font-size: 12px;
+    border-radius: var(--ildesc-radius);
+    text-align: left;
+    border: 1px solid #3c434a;
+    margin-bottom: 14px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.ildesc-log-item    { margin-bottom: 4px; padding-bottom: 3px; border-bottom: 1px solid #2a3035; }
+.ildesc-log-success { color: #4ade80; font-weight: 600; }
+.ildesc-log-error   { color: #f87171; font-weight: 600; }
+.ildesc-log-info    { color: #72aee6; }
+
+.ildesc-modal-footer { margin-top: 16px; }

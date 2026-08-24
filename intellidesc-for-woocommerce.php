@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.2
+ * Version:           1.9.3
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -37,11 +37,12 @@ define( 'ILDESC_XAI_API_KEY',       'ildesc_xai_api_key' );
 define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
 define( 'ILDESC_MODEL_DEPRECATION_FLAGS', 'ildesc_model_deprecation_flags' );
 define( 'ILDESC_MODEL_ADVISOR_DISMISSED', 'ildesc_model_advisor_dismissed' );
+define( 'ILDESC_DUPLICATE_SCAN_REPORT', 'ildesc_duplicate_scan_report' );
 
 
 // Enqueue Assets (Unified function)
 function ildesc_enqueue_admin_assets(  $hook  ) {
-    $is_settings_page = strpos( $hook, 'ildesc_settings_page' ) !== false;
+    $is_settings_page = strpos( $hook, 'ildesc_settings_page' ) !== false || strpos( $hook, 'ildesc_duplicate_scan_page' ) !== false;
     $is_product_page  = in_array( $hook, ['post.php', 'post-new.php', 'edit.php'] );
     
     global $post;
@@ -80,6 +81,11 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'unknown_error'   => __( 'Unknown', 'intellidesc-for-woocommerce' ),
         'placeholder_features'    => __( 'Processor, RAM...', 'intellidesc-for-woocommerce' ),
         'placeholder_feature_name' => __( 'Feature name', 'intellidesc-for-woocommerce' ),
+        'scan_starting'   => __( 'Starting scan...', 'intellidesc-for-woocommerce' ),
+        'scan_progress'   => __( 'Scanned %1$d of %2$d products...', 'intellidesc-for-woocommerce' ),
+        'scan_finalizing' => __( 'Analyzing results...', 'intellidesc-for-woocommerce' ),
+        'scan_done'       => __( 'Scan complete! Refreshing page...', 'intellidesc-for-woocommerce' ),
+        'scan_error'      => __( 'Scan failed: ', 'intellidesc-for-woocommerce' ),
     ) );
 }
 add_action( 'admin_enqueue_scripts', 'ildesc_enqueue_admin_assets' );
@@ -92,6 +98,7 @@ require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-xai.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ai-dispatch.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/admin-settings.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ajax-handler.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/duplicate-scan.php';
 
 // Register Metaboxes
 function ildesc_register_metaboxes() {

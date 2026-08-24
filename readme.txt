@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.9.2
+Stable tag: 1.9.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -73,6 +73,7 @@ Depending on which provider you select, the plugin talks to one of the following
 * **AI Model Selection:** Choose which model to use for generation directly from plugin settings.
 * **Generate Descriptions Only:** Skip spec extraction entirely and generate only Short and Long Descriptions — useful for stores that manage attributes manually or want faster, token-light generation.
 * **Multi-language Support:** Works in English, Ukrainian, Polish, German, Spanish, French, and many more.
+* **Duplicate Content Scan:** Scan your whole catalog for products with identical or near-identical descriptions and see exactly which products are affected (WooCommerce → IntelliDesc Duplicates), so you can fix thin/duplicate content before it hurts your SEO.
 
 ### PRO FEATURES (Available on our website)
 
@@ -84,6 +85,7 @@ Upgrade to Pro for advanced workflow automation and deeper WooCommerce integrati
 * **Social Media Ready:** Generates ready-to-post captions for Instagram/Facebook.
 * **Niche Presets:** Optimized AI instructions for Apparel, Electronics, Beauty, Automotive, and Home goods.
 * **Tone of Voice:** Choose between Neutral, Persuasive (Sales), Playful, or Luxury styles.
+* **Extended Duplicate Scan:** Clickable links straight to each affected product, a similarity score for every near-duplicate group, and a separate Thin Content report flagging descriptions under a configurable word count.
 
 ### FREE VS PRO
 
@@ -94,6 +96,7 @@ The Free version covers everything you need to generate AI product descriptions 
 * Automatic SEO meta titles/descriptions for Yoast SEO and RankMath.
 * Ready-to-post Instagram/Facebook captions generated alongside each product.
 * Selectable Tone of Voice (Persuasive, Playful, Luxury, Minimalist) instead of neutral-only copy.
+* Duplicate Content Scan results link directly to each product and show a similarity score, plus a separate Thin Content report — instead of just a list of names.
 
 Unit & Format Rules and AI Model/Provider Selection are available in both versions.
 
@@ -130,7 +133,13 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 = How accurate is the data? =
 When using Google Gemini, the plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate, regardless of provider. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
+= Does the Duplicate Content Scan send my product data to an AI provider? =
+No. The scan compares your existing product descriptions entirely on your own server — nothing is sent to Gemini, Claude, OpenAI, xAI, or any other third party. It only calls out to your chosen AI provider when you click "Generate Content".
+
 == Changelog ==
+
+= 1.9.3 =
+* New: **Duplicate Content Scan** (WooCommerce → IntelliDesc Duplicates) — scans your whole catalog for products with identical or near-identical AI-generated descriptions and lists the affected products, so you can spot and fix thin/duplicate content before it hurts your SEO.
 
 = 1.9.2 =
 * Fixed: The automatic fallback model (used to retry once when your selected model returns a "not found" error) was only ever set for Google Gemini — Claude, OpenAI, and Grok requests had no fallback and simply failed. Every provider now retries against its own known-good fallback model.

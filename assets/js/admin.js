@@ -214,6 +214,105 @@ jQuery(document).ready(function($) {
     });
 
     // ==========================================
+    // 6. CATALOG DUPLICATE SCAN
+    // ==========================================
+    var scanId = null;
+
+    $(document).on('click', '#ildesc-scan-start-btn', function(e) {
+        e.preventDefault();
+
+        $('#ildesc-scan-modal').css('display', 'flex').hide().fadeIn();
+        $('#ildesc-scan-log-window').empty();
+        $('#ildesc-scan-progress').css('width', '0%');
+        $('#ildesc-scan-status-text').text(ildesc_params.scan_starting);
+        $('#ildesc-scan-close').text(ildesc_params.stop_btn);
+
+        $.post(ildesc_params.ajax_url, {
+            action: 'ildesc_scan_start',
+            nonce:  ildesc_params.nonce
+        }, function(response) {
+            if (!response.success) {
+                scanFail(response.data && response.data.message);
+                return;
+            }
+            scanId = response.data.scan_id;
+            if (response.data.total_products === 0) {
+                scanFail(ildesc_params.no_selected);
+                return;
+            }
+            processNextScanBatch(response.data.total_products);
+        }).fail(function() {
+            scanFail(null);
+        });
+    });
+
+    function processNextScanBatch(totalProducts) {
+        $.post(ildesc_params.ajax_url, {
+            action:  'ildesc_scan_batch',
+            nonce:   ildesc_params.nonce,
+            scan_id: scanId
+        }, function(response) {
+            if (!response.success) {
+                scanFail(response.data && response.data.message);
+                return;
+            }
+
+            var scanned = response.data.scanned_count;
+            var total   = response.data.total_products;
+            var pct     = total > 0 ? Math.round((scanned / total) * 100) : 100;
+
+            $('#ildesc-scan-progress').css('width', pct + '%');
+            $('#ildesc-scan-status-text').text(
+                ildesc_params.scan_progress.replace('%1$d', scanned).replace('%2$d', total)
+            );
+
+            var $log = $('#ildesc-scan-log-window');
+            $('<div>').addClass('ildesc-log-item ildesc-log-info').text(scanned + ' / ' + total).appendTo($log);
+            $log.scrollTop($log[0].scrollHeight);
+
+            if (response.data.done) {
+                finalizeScan();
+            } else {
+                setTimeout(function() { processNextScanBatch(total); }, 150);
+            }
+        }).fail(function() {
+            scanFail(null);
+        });
+    }
+
+    function finalizeScan() {
+        $('#ildesc-scan-status-text').text(ildesc_params.scan_finalizing);
+        $.post(ildesc_params.ajax_url, {
+            action:  'ildesc_scan_finalize',
+            nonce:   ildesc_params.nonce,
+            scan_id: scanId
+        }, function(response) {
+            if (!response.success) {
+                scanFail(response.data && response.data.message);
+                return;
+            }
+            $('#ildesc-scan-progress').css('width', '100%');
+            $('#ildesc-scan-status-text').text(ildesc_params.scan_done);
+            setTimeout(function() { window.location.reload(); }, 1500);
+        }).fail(function() {
+            scanFail(null);
+        });
+    }
+
+    function scanFail(message) {
+        var $log = $('#ildesc-scan-log-window');
+        $('<div>').addClass('ildesc-log-item ildesc-log-error')
+            .text(ildesc_params.scan_error + (message || ildesc_params.unknown_error))
+            .appendTo($log);
+        $('#ildesc-scan-status-text').text('');
+        $('#ildesc-scan-close').text(ildesc_params.close_btn);
+    }
+
+    $(document).on('click', '#ildesc-scan-close', function() {
+        $('#ildesc-scan-modal').fadeOut();
+    });
+
+    // ==========================================
     // HELPERS
     // ==========================================
 
