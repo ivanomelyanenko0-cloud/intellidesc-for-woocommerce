@@ -14,28 +14,42 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param string $model         Model id.
  * @param string $prompt        Plain-text user prompt (already fully built).
  * @param string $api_key       Bearer API key.
- * @param array  $options       ['timeout', 'fallback_model', 'max_tokens'].
+ * @param array  $options       ['timeout', 'fallback_model', 'max_tokens', 'use_search_tool'].
  * @return string|WP_Error Raw text response on success, WP_Error on failure.
  */
 function ildesc_ai_call_openai_compatible( $base_url, $provider_slug, $model, $prompt, $api_key, $options = [] ) {
-    $timeout        = $options['timeout'] ?? 60;
-    $fallback_model = $options['fallback_model'] ?? '';
-    $max_tokens     = $options['max_tokens'] ?? 4096;
+    $timeout         = $options['timeout'] ?? 60;
+    $fallback_model  = $options['fallback_model'] ?? '';
+    $max_tokens      = $options['max_tokens'] ?? 4096;
+    $use_search_tool = ! empty( $options['use_search_tool'] );
 
     $models_to_try = ( ! empty( $fallback_model ) && $model !== $fallback_model ) ? [ $model, $fallback_model ] : [ $model ];
+
+    // Web search is only available on the Responses API, not Chat Completions —
+    // switch endpoint + request/response shape only when search is requested.
+    $endpoint_url = $use_search_tool ? str_replace( '/chat/completions', '/responses', $base_url ) : $base_url;
 
     $response      = null;
     $http_code     = 0;
     $response_body = '';
 
     foreach ( $models_to_try as $model_attempt ) {
-        $request_body_array = [
-            'model'      => $model_attempt,
-            'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
-            'max_tokens' => $max_tokens,
-        ];
+        if ( $use_search_tool ) {
+            $request_body_array = [
+                'model'             => $model_attempt,
+                'input'             => $prompt,
+                'max_output_tokens' => $max_tokens,
+                'tools'             => [ [ 'type' => 'web_search' ] ],
+            ];
+        } else {
+            $request_body_array = [
+                'model'      => $model_attempt,
+                'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
+                'max_tokens' => $max_tokens,
+            ];
+        }
 
-        $response = wp_remote_post( $base_url, [
+        $response = wp_remote_post( $endpoint_url, [
             'headers' => [
                 'Content-Type'  => 'application/json',
                 'Authorization' => 'Bearer ' . $api_key,
@@ -65,6 +79,27 @@ function ildesc_ai_call_openai_compatible( $base_url, $provider_slug, $model, $p
     }
 
     $data = json_decode( $response_body, true );
+
+    if ( $use_search_tool ) {
+        $text = '';
+        if ( ! empty( $data['output'] ) && is_array( $data['output'] ) ) {
+            foreach ( $data['output'] as $item ) {
+                if ( ( $item['type'] ?? '' ) !== 'message' || empty( $item['content'] ) || ! is_array( $item['content'] ) ) {
+                    continue;
+                }
+                foreach ( $item['content'] as $content_block ) {
+                    if ( ! empty( $content_block['text'] ) ) {
+                        $text .= $content_block['text'];
+                    }
+                }
+            }
+        }
+        if ( $text === '' ) {
+            /* translators: %s: AI provider name (e.g. OpenAI, Grok) */
+            return new WP_Error( 'api_error', sprintf( __( 'Unexpected API response structure from %s.', 'intellidesc-for-woocommerce' ), ildesc_ai_provider_label( $provider_slug ) ) );
+        }
+        return $text;
+    }
 
     if ( ! isset( $data['choices'][0]['message']['content'] ) ) {
         /* translators: %s: AI provider name (e.g. OpenAI, Grok) */
