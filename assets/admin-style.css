@@ -134,6 +134,21 @@
 #ildesc-status-message.ildesc-msg-success .dashicons { color: var(--ildesc-success); }
 #ildesc-status-message.ildesc-msg-error   .dashicons { color: var(--ildesc-error); }
 
+.ildesc-generic-badge {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fcf9e8;
+    border: 1px solid #f0e3ac;
+    border-radius: var(--ildesc-radius);
+    color: #7c6206;
+    font-size: 11px;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+}
+.ildesc-generic-badge .dashicons { font-size: 14px; width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+
 /* ============================================
    FEATURES TABLE (product page)
    ============================================ */
@@ -153,6 +168,18 @@
     font-weight: 600;
     font-size: 13px;
     color: var(--ildesc-text);
+}
+
+.ildesc-history-box {
+    margin-bottom: 14px;
+    padding: 9px 12px;
+    background: var(--ildesc-bg);
+    border: 1px solid var(--ildesc-border);
+    border-radius: var(--ildesc-radius);
+}
+
+.ildesc-history-box .description {
+    margin: 6px 0 0;
 }
 
 /* Shared table styles */

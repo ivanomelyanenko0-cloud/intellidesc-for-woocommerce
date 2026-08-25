@@ -2,8 +2,8 @@
 Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
-Tested up to: 7.0
-Stable tag: 1.9.3
+Tested up to: 7.1
+Stable tag: 1.9.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -137,6 +137,12 @@ When using Google Gemini, the plugin uses Google Search grounding to find real s
 No. The scan compares your existing product descriptions entirely on your own server — nothing is sent to Gemini, Claude, OpenAI, xAI, or any other third party. It only calls out to your chosen AI provider when you click "Generate Content".
 
 == Changelog ==
+
+= 1.9.4 =
+* New: **Content History** — every time AI generation overwrites an existing description, the previous short/long description and features are saved. Use the "Undo Last AI Generation" button in the AI Features box to revert your most recent change.
+* New: AI generation now uses real web search on **all four providers** — previously only Gemini could search the web; Claude, OpenAI, and Grok now verify facts online too instead of relying purely on the model's training data.
+* New: **Generic / unbranded product support** — for items with no findable brand or web listing (bulk goods, craft supplies, generic hardware, etc.), the AI now writes a plausible description from general product knowledge and the details already in the title, instead of returning a weak or empty result. A small notice appears whenever this fallback was used, so you know to double-check the details before publishing.
+* Fixed: if the AI returned a completely empty description, the plugin used to silently save it as a "successful" generation. It now shows a clear error instead, so you know to retry or try a different provider/model.
 
 = 1.9.3 =
 * New: **Duplicate Content Scan** (WooCommerce → IntelliDesc Duplicates) — scans your whole catalog for products with identical or near-identical AI-generated descriptions and lists the affected products, so you can spot and fix thin/duplicate content before it hurts your SEO.

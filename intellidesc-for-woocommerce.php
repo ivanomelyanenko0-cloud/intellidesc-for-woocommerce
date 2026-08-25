@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.3
+ * Version:           1.9.4
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -38,6 +38,7 @@ define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
 define( 'ILDESC_MODEL_DEPRECATION_FLAGS', 'ildesc_model_deprecation_flags' );
 define( 'ILDESC_MODEL_ADVISOR_DISMISSED', 'ildesc_model_advisor_dismissed' );
 define( 'ILDESC_DUPLICATE_SCAN_REPORT', 'ildesc_duplicate_scan_report' );
+define( 'ILDESC_CONTENT_HISTORY_LIMIT', 10 );
 
 
 // Enqueue Assets (Unified function)
@@ -53,10 +54,10 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
     }
 
     // CSS
-    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.6' );
+    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.7' );
 
     // JS
-    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.6', true );
+    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.7', true );
     
     // Localize JS
     wp_localize_script( 'ildesc-admin-script', 'ildesc_params', array(
@@ -78,6 +79,8 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'close_btn'       => __( 'Close', 'intellidesc-for-woocommerce' ),
         'stop_btn'        => __( 'Stop', 'intellidesc-for-woocommerce' ),
         'confirm_clear'   => __( 'Are you sure you want to clear the short description?', 'intellidesc-for-woocommerce' ),
+        'confirm_revert'  => __( 'Revert to this version? The current content will be saved to history first.', 'intellidesc-for-woocommerce' ),
+        'reverting_text'  => __( 'Reverting...', 'intellidesc-for-woocommerce' ),
         'unknown_error'   => __( 'Unknown', 'intellidesc-for-woocommerce' ),
         'placeholder_features'    => __( 'Processor, RAM...', 'intellidesc-for-woocommerce' ),
         'placeholder_feature_name' => __( 'Feature name', 'intellidesc-for-woocommerce' ),
@@ -86,6 +89,7 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'scan_finalizing' => __( 'Analyzing results...', 'intellidesc-for-woocommerce' ),
         'scan_done'       => __( 'Scan complete! Refreshing page...', 'intellidesc-for-woocommerce' ),
         'scan_error'      => __( 'Scan failed: ', 'intellidesc-for-woocommerce' ),
+        'generic_notice'  => __( 'Generated using general product knowledge (no verified data found online for this item) — please review before publishing.', 'intellidesc-for-woocommerce' ),
     ) );
 }
 add_action( 'admin_enqueue_scripts', 'ildesc_enqueue_admin_assets' );
@@ -152,6 +156,11 @@ function ildesc_render_product_features_metabox(  $post  ) {
     }
     // We check availability for SMM post
     $smm_post = get_post_meta( $post->ID, '_ildesc_smm_post', true );
+
+    $content_history = get_post_meta( $post->ID, '_ildesc_content_history', true );
+    if ( ! is_array( $content_history ) ) {
+        $content_history = [];
+    }
     ?>
 
     <div class="ildesc-tools-box">
@@ -160,7 +169,22 @@ function ildesc_render_product_features_metabox(  $post  ) {
             <?php esc_html_e( 'Clear Short Description', 'intellidesc-for-woocommerce' ); ?>
         </button>
     </div>
-    
+
+    <?php if ( ! empty( $content_history ) ) : ?>
+        <div class="ildesc-history-box">
+            <button type="button" id="ildesc-undo-last-btn" class="button" data-product-id="<?php echo esc_attr( $post->ID ); ?>" data-history-index="0">
+                <?php
+                printf(
+                    /* translators: %s: date/time the previous version was generated */
+                    esc_html__( 'Undo Last AI Generation (from %s)', 'intellidesc-for-woocommerce' ),
+                    esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $content_history[0]['time'] ?? time() ) )
+                );
+                ?>
+            </button>
+            <p class="description"><?php esc_html_e( 'Upgrade to PRO to browse and compare the full content history.', 'intellidesc-for-woocommerce' ); ?></p>
+        </div>
+    <?php endif; ?>
+
     <table id="ildesc-features-table" class="widefat striped ildesc-full-width ildesc-table-layout">
         <thead>
             <tr>

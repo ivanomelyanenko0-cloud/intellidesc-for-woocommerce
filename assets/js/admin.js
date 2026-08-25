@@ -55,43 +55,7 @@ jQuery(document).ready(function($) {
                 nonce:              ildesc_params.nonce
             },
             success: function(response) {
-                if (response.success) {
-                    var extra = response.data.message ? ' — ' + response.data.message : '';
-                    showStatus($output, 'success', ildesc_params.status_success + extra);
-
-                    if (response.data.short_description) {
-                        if (typeof tinymce !== 'undefined' && tinymce.get('excerpt') && !tinymce.get('excerpt').isHidden()) {
-                            tinymce.get('excerpt').setContent(response.data.short_description);
-                        } else {
-                            $('#excerpt').val(response.data.short_description);
-                        }
-                    }
-
-                    if (response.data.long_description) {
-                        if (typeof tinymce !== 'undefined' && tinymce.get('content') && !tinymce.get('content').isHidden()) {
-                            tinymce.get('content').setContent(response.data.long_description);
-                        } else if ($('#content').length) {
-                            $('#content').val(response.data.long_description);
-                        }
-                    }
-
-                    if (response.data.features && $('.ildesc-features-wrap').length) {
-                        var $wrap = $('.ildesc-features-wrap');
-                        $wrap.empty();
-                        response.data.features.forEach(function(feat, index) {
-                            $wrap.append(buildFeatureRow(index, feat.name, feat.value));
-                        });
-                    }
-
-                    if (response.data.reload_required) {
-                        showStatus($output, 'success', ildesc_params.status_done);
-                        $btn.prop('disabled', true);
-                        setTimeout(function() { window.location.reload(); }, 5000);
-                        return;
-                    }
-                } else {
-                    showStatus($output, 'error', ildesc_params.status_error + (response.data.message || ildesc_params.unknown_error));
-                }
+                applyContentResponse(response, $output, $btn);
             },
             error: function(xhr, status, error) {
                 showStatus($output, 'error', ildesc_params.server_error + ' ' + error);
@@ -125,6 +89,45 @@ jQuery(document).ready(function($) {
         var $row  = $(buildFeatureRow(index, '', ''));
         $('.ildesc-features-wrap').append($row.addClass('ildesc-row-new'));
         $row.find('input').first().focus();
+    });
+
+    // ==========================================
+    // CONTENT HISTORY (Undo / Revert)
+    // ==========================================
+    $(document).on('click', '#ildesc-undo-last-btn, .ildesc-revert-version', function(e) {
+        e.preventDefault();
+
+        if (!window.confirm(ildesc_params.confirm_revert)) {
+            return;
+        }
+
+        var $btn         = $(this);
+        var $output      = $('#ildesc-status-message').length ? $('#ildesc-status-message') : $('#ildesc-message');
+        var productId    = $btn.data('product-id');
+        var historyIndex = $btn.data('history-index');
+        var originalText = $btn.text();
+
+        $btn.prop('disabled', true).text(ildesc_params.reverting_text);
+
+        $.ajax({
+            url:      ildesc_params.ajax_url,
+            type:     'POST',
+            dataType: 'json',
+            data: {
+                action:         'ildesc_revert_content_version',
+                product_id:     productId,
+                history_index:  historyIndex,
+                nonce:          ildesc_params.nonce
+            },
+            success: function(response) {
+                applyContentResponse(response, $output, $btn);
+                if (!response.success) { $btn.text(originalText); }
+            },
+            error: function(xhr, status, error) {
+                showStatus($output, 'error', ildesc_params.server_error + ' ' + error);
+                $btn.prop('disabled', false).text(originalText);
+            }
+        });
     });
 
     $('#ildesc-clear-excerpt').on('click', function(e) {
@@ -315,6 +318,53 @@ jQuery(document).ready(function($) {
     // ==========================================
     // HELPERS
     // ==========================================
+
+    function applyContentResponse(response, $output, $btn) {
+        if (response.success) {
+            var extra = response.data.message ? ' — ' + response.data.message : '';
+            showStatus($output, 'success', ildesc_params.status_success + extra);
+            if (response.data.confidence === 'generic') {
+                $output.append('<div class="ildesc-generic-badge"><span class="dashicons dashicons-info-outline"></span> ' + ildesc_params.generic_notice + '</div>');
+            }
+
+            if (response.data.short_description) {
+                if (typeof tinymce !== 'undefined' && tinymce.get('excerpt') && !tinymce.get('excerpt').isHidden()) {
+                    tinymce.get('excerpt').setContent(response.data.short_description);
+                } else {
+                    $('#excerpt').val(response.data.short_description);
+                }
+            }
+
+            if (response.data.long_description) {
+                if (typeof tinymce !== 'undefined' && tinymce.get('content') && !tinymce.get('content').isHidden()) {
+                    tinymce.get('content').setContent(response.data.long_description);
+                } else if ($('#content').length) {
+                    $('#content').val(response.data.long_description);
+                }
+            }
+
+            if (response.data.features && $('.ildesc-features-wrap').length) {
+                var $wrap = $('.ildesc-features-wrap');
+                $wrap.empty();
+                response.data.features.forEach(function(feat, index) {
+                    $wrap.append(buildFeatureRow(index, feat.name, feat.value));
+                });
+            }
+
+            if (response.data.reload_required) {
+                showStatus($output, 'success', ildesc_params.status_done);
+                if (response.data.confidence === 'generic') {
+                    $output.append('<div class="ildesc-generic-badge"><span class="dashicons dashicons-info-outline"></span> ' + ildesc_params.generic_notice + '</div>');
+                }
+                if ($btn) { $btn.prop('disabled', true); }
+                setTimeout(function() { window.location.reload(); }, 5000);
+                return;
+            }
+        } else {
+            showStatus($output, 'error', ildesc_params.status_error + (response.data.message || ildesc_params.unknown_error));
+            if ($btn) { $btn.prop('disabled', false); }
+        }
+    }
 
     function buildFeatureRow(index, name, value) {
         var eName  = $('<div>').text(name).html();

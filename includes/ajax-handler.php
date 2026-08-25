@@ -7,6 +7,80 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action('wp_ajax_ildesc_autocomplete_features', 'ildesc_handle_autocomplete_features');
 add_action('wp_ajax_ildesc_dismiss_model_advisor', 'ildesc_handle_dismiss_model_advisor');
+add_action('wp_ajax_ildesc_revert_content_version', 'ildesc_handle_revert_content_version');
+
+/**
+ * Prepends a snapshot to the product's content-history meta, capped at ILDESC_CONTENT_HISTORY_LIMIT.
+ */
+function ildesc_push_content_history_snapshot( $product_id, $snapshot ) {
+    $history = get_post_meta( $product_id, '_ildesc_content_history', true );
+    if ( ! is_array( $history ) ) {
+        $history = [];
+    }
+    array_unshift( $history, $snapshot );
+    $history = array_slice( $history, 0, ILDESC_CONTENT_HISTORY_LIMIT );
+    update_post_meta( $product_id, '_ildesc_content_history', $history );
+}
+
+/**
+ * Reverts a product's short/long description + features to a past snapshot.
+ * The pre-revert content is itself pushed onto the history stack first, so a revert can be undone.
+ */
+function ildesc_handle_revert_content_version() {
+    check_ajax_referer( 'ildesc_autocomplete_nonce', 'nonce' );
+
+    if ( ! current_user_can( 'edit_products' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    $product_id = isset( $_POST['product_id'] )     ? absint( $_POST['product_id'] )     : 0;
+    $index      = isset( $_POST['history_index'] )  ? absint( $_POST['history_index'] )  : -1;
+
+    if ( $product_id === 0 || ! current_user_can( 'edit_product', $product_id ) ) {
+        wp_send_json_error( array( 'message' => __( 'Invalid product.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    $product = wc_get_product( $product_id );
+    if ( ! $product ) {
+        wp_send_json_error( array( 'message' => __( 'Product not found.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    $history = get_post_meta( $product_id, '_ildesc_content_history', true );
+    if ( ! is_array( $history ) || ! isset( $history[ $index ] ) ) {
+        wp_send_json_error( array( 'message' => __( 'That history entry no longer exists.', 'intellidesc-for-woocommerce' ) ) );
+    }
+
+    $target = $history[ $index ];
+    unset( $history[ $index ] );
+    $history = array_values( $history );
+
+    $current_features = get_post_meta( $product_id, '_ildesc_editable_features', true );
+    array_unshift( $history, [
+        'time'     => current_time( 'timestamp' ),
+        'short'    => $product->get_short_description(),
+        'long'     => $product->get_description(),
+        'features' => is_array( $current_features ) ? $current_features : [],
+        'provider' => isset( $target['provider'] ) ? $target['provider'] : '',
+        'model'    => isset( $target['model'] ) ? $target['model'] : '',
+    ] );
+    $history = array_slice( $history, 0, ILDESC_CONTENT_HISTORY_LIMIT );
+    update_post_meta( $product_id, '_ildesc_content_history', $history );
+
+    $target_features = ( isset( $target['features'] ) && is_array( $target['features'] ) ) ? $target['features'] : [];
+
+    $product->set_short_description( wp_kses_post( $target['short'] ?? '' ) );
+    $product->set_description( wp_kses_post( $target['long'] ?? '' ) );
+    $product->save();
+    update_post_meta( $product_id, '_ildesc_editable_features', $target_features );
+
+    wp_send_json_success( [
+        'message'           => __( 'Reverted to the selected version.', 'intellidesc-for-woocommerce' ),
+        'short_description' => $target['short'] ?? '',
+        'long_description'  => $target['long'] ?? '',
+        'features'          => $target_features,
+        'reload_required'   => true,
+    ] );
+}
 
 /**
  * Records that the merchant dismissed the "a newer model is available"
@@ -194,17 +268,25 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
         $product_type_context = "PRODUCT TYPE: Virtual Service or Membership. IMPORTANT: Focus 'Features' on service details, duration, access type, or support terms. No physical specs.";
     }
 
+    // H. UNBRANDED / GENERIC PRODUCT FALLBACK
+    $generic_fallback_prompt = "UNBRANDED / GENERIC PRODUCTS (IMPORTANT):
+    If this exact product cannot be identified as a specific branded/searchable item (e.g. it is generic, bulk, no-name, or otherwise has no findable web presence), DO NOT fail, refuse, or return empty fields.
+    1. Write the Short_Description and Long_Description using well-established general knowledge about this type of product (typical use, materials, properties). A plausible, honest, generic description is REQUIRED — never leave them blank.
+    2. Reuse any concrete facts already present in the product title itself (size, dimensions, color, quantity, material, units) — do not omit or contradict them.
+    3. For Features, only include values that are generally true for this type of product; phrase them qualitatively rather than inventing precise brand-specific numbers you cannot verify. If a required Feature key (see constraints below) has no knowable value for a generic item, it is acceptable to omit that entry rather than fabricate a number.
+    4. Set 'Confidence' to 'generic' whenever this fallback was used for any part of the output; otherwise set it to 'verified'.";
+
     // ---------------------------------------------------------
     // 4. CONSTRUCT FINAL JSON & SYSTEM INSTRUCTION
     // ---------------------------------------------------------
-    
-    $json_structure = "{'Short_Description': 'string', 'Long_Description': 'string'";
+
+    $json_structure = "{'Short_Description': 'string', 'Long_Description': 'string', 'Confidence': 'verified|generic'";
     if ( ! $skip_features ) {
         $json_structure .= ", 'Features': [{'Name': 'string', 'Value': 'string'}]";
     }
     $json_structure .= "}";
 
-    $search_tool_instruction = ( $provider === 'gemini' ) ? "- USE GOOGLE SEARCH TOOL.\n       " : '';
+    $search_tool_instruction = "- USE THE WEB SEARCH TOOL TO VERIFY REAL SPECIFICATIONS.\n       ";
 
     $features_task = '';
     if ( ! $skip_features ) {
@@ -219,7 +301,8 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
        {$search_tool_instruction}{$units_prompt_part}
        {$formatting_rules}
 
-       - DO NOT use generic descriptors like 'High res'. Use NUMBERS.";
+       - Prefer exact NUMBERS over vague descriptors (e.g. 'High res') when a precise value is knowable for this specific product.
+       - If this is a generic/unbranded item with no exact number available (see the UNBRANDED/GENERIC rule above), use a standard qualitative description instead of inventing a false number.";
     }
 
     $base_instruction = "Act as an E-commerce Assistant. Analyze the product: \"{$product_title}\".
@@ -227,6 +310,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     {$user_constraints_prompt}
     {$tone_instruction}
     {$product_type_context}
+    {$generic_fallback_prompt}
 
     {$desc_prompt_part}
 
@@ -246,7 +330,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // ---------------------------------------------------------
 
     $ai_result = ildesc_ai_call( $provider, $selected_model, $base_instruction, $api_key, [
-        'use_search_tool' => ( $provider === 'gemini' ),
+        'use_search_tool' => true,
         'fallback_model'  => ildesc_get_fallback_model_for_provider( $provider ),
     ] );
 
@@ -277,11 +361,35 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
         return new WP_Error('json_parse', 'JSON Decode Error.');
     }
 
+    $short_empty = trim( (string) ( $features_json['Short_Description'] ?? '' ) ) === '';
+    $long_empty  = trim( (string) ( $features_json['Long_Description'] ?? '' ) ) === '';
+    if ( $short_empty && $long_empty ) {
+        return new WP_Error( 'empty_content', __( 'The AI returned an empty response for this product. Please try again or switch AI providers/models.', 'intellidesc-for-woocommerce' ) );
+    }
+
     // ---------------------------------------------------------
     // 7. SAVING DATA
     // ---------------------------------------------------------
 
     $overwrite = get_option( ILDESC_OVERWRITE_DATA, 0 );
+
+    $prev_short    = $product->get_short_description();
+    $prev_long     = $product->get_description();
+    $prev_features = get_post_meta( $product_id, '_ildesc_editable_features', true );
+    if ( ! is_array( $prev_features ) ) {
+        $prev_features = [];
+    }
+
+    if ( $overwrite && ( $prev_short !== '' || $prev_long !== '' || ! empty( $prev_features ) ) ) {
+        ildesc_push_content_history_snapshot( $product_id, [
+            'time'     => current_time( 'timestamp' ),
+            'short'    => $prev_short,
+            'long'     => $prev_long,
+            'features' => $prev_features,
+            'provider' => $provider,
+            'model'    => $selected_model,
+        ] );
+    }
 
     if ($overwrite || empty($product->get_short_description())) {
         $product->set_short_description(wp_kses_post($features_json['Short_Description'] ?? ''));
@@ -317,12 +425,15 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     
     $product->save();
 
+    $confidence = ( isset( $features_json['Confidence'] ) && strtolower( trim( (string) $features_json['Confidence'] ) ) === 'generic' ) ? 'generic' : 'verified';
+
     return [
         'success'           => true,
         'message'           => __('Content generated successfully!', 'intellidesc-for-woocommerce'),
         'short_description' => $features_json['Short_Description'] ?? '',
         'long_description'  => $features_json['Long_Description'] ?? '',
         'features'          => $editable_features,
+        'confidence'        => $confidence,
         'reload_required'   => false,
     ];
 }

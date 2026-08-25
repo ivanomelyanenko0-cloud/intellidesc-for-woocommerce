@@ -11,13 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param string $model    Claude model id.
  * @param string $prompt   Plain-text user prompt (already fully built).
  * @param string $api_key  Anthropic API key.
- * @param array  $options  ['timeout', 'fallback_model', 'max_tokens'].
+ * @param array  $options  ['timeout', 'fallback_model', 'max_tokens', 'use_search_tool'].
  * @return string|WP_Error Raw text response on success, WP_Error on failure.
  */
 function ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options = [] ) {
-    $timeout        = $options['timeout'] ?? 60;
-    $fallback_model = $options['fallback_model'] ?? '';
-    $max_tokens     = $options['max_tokens'] ?? 4096;
+    $timeout         = $options['timeout'] ?? 60;
+    $fallback_model  = $options['fallback_model'] ?? '';
+    $max_tokens      = $options['max_tokens'] ?? 4096;
+    $use_search_tool = ! empty( $options['use_search_tool'] );
 
     $models_to_try = ( ! empty( $fallback_model ) && $model !== $fallback_model ) ? [ $model, $fallback_model ] : [ $model ];
 
@@ -31,6 +32,12 @@ function ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options = [] ) {
             'max_tokens' => $max_tokens,
             'messages'   => [ [ 'role' => 'user', 'content' => $prompt ] ],
         ];
+
+        if ( $use_search_tool ) {
+            $request_body_array['tools'] = [
+                [ 'type' => 'web_search_20250305', 'name' => 'web_search', 'max_uses' => 3 ],
+            ];
+        }
 
         $response = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
             'headers' => [
@@ -64,9 +71,18 @@ function ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options = [] ) {
 
     $data = json_decode( $response_body, true );
 
-    if ( ! isset( $data['content'][0]['text'] ) ) {
+    $text = '';
+    if ( ! empty( $data['content'] ) && is_array( $data['content'] ) ) {
+        foreach ( $data['content'] as $block ) {
+            if ( ( $block['type'] ?? '' ) === 'text' && ! empty( $block['text'] ) ) {
+                $text .= $block['text'];
+            }
+        }
+    }
+
+    if ( $text === '' ) {
         return new WP_Error( 'api_error', __( 'Unexpected API response structure from Claude.', 'intellidesc-for-woocommerce' ) );
     }
 
-    return $data['content'][0]['text'];
+    return $text;
 }
