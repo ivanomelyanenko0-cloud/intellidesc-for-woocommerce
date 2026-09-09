@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function ildesc_get_current_provider() {
     $provider = get_option( ILDESC_AI_PROVIDER, 'gemini' );
-    $valid    = [ 'gemini', 'anthropic', 'openai', 'xai' ];
+    $valid    = [ 'gemini', 'anthropic', 'openai', 'xai', 'openrouter' ];
     return in_array( $provider, $valid, true ) ? $provider : 'gemini';
 }
 
@@ -27,6 +27,8 @@ function ildesc_get_api_key_for_provider( $provider ) {
             return get_option( ILDESC_OPENAI_API_KEY, '' );
         case 'xai':
             return get_option( ILDESC_XAI_API_KEY, '' );
+        case 'openrouter':
+            return get_option( ILDESC_OPENROUTER_API_KEY, '' );
         case 'gemini':
         default:
             return get_option( ILDESC_SETTINGS_KEY, '' );
@@ -44,6 +46,8 @@ function ildesc_get_model_for_provider( $provider ) {
             return get_option( ILDESC_OPENAI_MODEL, 'gpt-4.1-mini' );
         case 'xai':
             return get_option( ILDESC_XAI_MODEL, 'grok-4-fast' );
+        case 'openrouter':
+            return get_option( ILDESC_OPENROUTER_MODEL, 'openai/gpt-4.1-mini' );
         case 'gemini':
         default:
             return get_option( ILDESC_SELECTED_MODEL, 'gemini-3.1-flash-lite' );
@@ -64,6 +68,8 @@ function ildesc_get_fallback_model_for_provider( $provider ) {
             return 'gpt-4.1-mini';
         case 'xai':
             return 'grok-4-fast';
+        case 'openrouter':
+            return 'openai/gpt-4.1-mini';
         case 'gemini':
         default:
             return 'gemini-3.1-flash-lite';
@@ -79,6 +85,7 @@ function ildesc_ai_provider_label( $provider ) {
         'anthropic' => 'Claude',
         'openai'    => 'OpenAI',
         'xai'       => 'Grok',
+        'openrouter' => 'OpenRouter',
     ];
     return $labels[ $provider ] ?? ucfirst( $provider );
 }
@@ -155,7 +162,7 @@ function ildesc_set_model_advisor_dismissed( $provider, $model ) {
 /**
  * Dispatches a single-turn text completion request to the given provider.
  *
- * @param string $provider 'gemini' | 'anthropic' | 'openai' | 'xai'.
+ * @param string $provider 'gemini' | 'anthropic' | 'openai' | 'xai' | 'openrouter'.
  * @param string $model    Provider-specific model id.
  * @param string $prompt   Plain-text user prompt (already fully built).
  * @param string $api_key  Raw API key for that provider.
@@ -170,6 +177,8 @@ function ildesc_ai_call( $provider, $model, $prompt, $api_key, $options = [] ) {
             return ildesc_ai_call_openai( $model, $prompt, $api_key, $options );
         case 'xai':
             return ildesc_ai_call_xai( $model, $prompt, $api_key, $options );
+        case 'openrouter':
+            return ildesc_ai_call_openrouter( $model, $prompt, $api_key, $options );
         case 'gemini':
         default:
             return ildesc_ai_call_gemini( $model, $prompt, $api_key, $options );

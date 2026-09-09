@@ -96,7 +96,7 @@ function ildesc_handle_dismiss_model_advisor() {
 
     $provider         = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : '';
     $model            = isset( $_POST['model'] )    ? sanitize_text_field( wp_unslash( $_POST['model'] ) )    : '';
-    $valid_providers  = array( 'gemini', 'anthropic', 'openai', 'xai' );
+    $valid_providers  = array( 'gemini', 'anthropic', 'openai', 'xai', 'openrouter' );
 
     if ( ! in_array( $provider, $valid_providers, true ) || empty( $model ) ) {
         wp_send_json_error( array( 'message' => __( 'Invalid request.', 'intellidesc-for-woocommerce' ) ) );

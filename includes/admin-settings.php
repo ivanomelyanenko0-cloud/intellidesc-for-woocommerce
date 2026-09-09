@@ -163,6 +163,48 @@ function ildesc_get_xai_models() {
     return $models;
 }
 
+function ildesc_get_openrouter_models() {
+    $api_key = get_option( ILDESC_OPENROUTER_API_KEY );
+    if ( empty( $api_key ) ) return [];
+
+    if ( isset( $_GET['refresh_models'] ) && '1' === $_GET['refresh_models'] && current_user_can( 'manage_options' )
+        && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
+        delete_transient( 'ildesc_openrouter_models_list' );
+    }
+
+    $cached = get_transient( 'ildesc_openrouter_models_list' );
+    if ( $cached !== false ) return $cached;
+
+    $response = wp_remote_get( 'https://openrouter.ai/api/v1/models', [
+        'headers' => [ 'Authorization' => 'Bearer ' . $api_key ],
+        'timeout' => 15,
+    ] );
+    if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) return [];
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['data'] ) ) return [];
+
+    $models    = [];
+    $blacklist = [ 'embedding', 'moderation', 'tts', 'whisper', 'transcribe' ];
+
+    foreach ( $body['data'] as $model ) {
+        $id = $model['id'];
+
+        $output_modalities = $model['architecture']['output_modalities'] ?? [];
+        if ( ! empty( $output_modalities ) && ! in_array( 'text', $output_modalities, true ) ) continue;
+
+        foreach ( $blacklist as $bad ) {
+            if ( strpos( $id, $bad ) !== false ) continue 2;
+        }
+
+        $models[ $id ] = $model['name'] ?? $id;
+    }
+
+    krsort( $models );
+    set_transient( 'ildesc_openrouter_models_list', $models, 86400 );
+    return $models;
+}
+
 /**
  * Renders a small status readout below a provider's model field: the raw
  * saved model id (resolved to a human label when possible), plus a warning
@@ -279,6 +321,10 @@ function ildesc_register_settings() {
     // xAI Grok
     register_setting( $option_group, ILDESC_XAI_API_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
     register_setting( $option_group, ILDESC_XAI_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+
+    // OpenRouter
+    register_setting( $option_group, ILDESC_OPENROUTER_API_KEY, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
+    register_setting( $option_group, ILDESC_OPENROUTER_MODEL, array('type' => 'string', 'sanitize_callback' => 'sanitize_text_field') );
 
     // Templates
     register_setting( $option_group, ILDESC_CATEGORY_TEMPLATES, array('type' => 'array', 'sanitize_callback' => 'ildesc_sanitize_category_templates') );
@@ -610,6 +656,16 @@ function ildesc_settings_page_content() {
                         </ol>
                         <p><em><?php esc_html_e('Pay-as-you-go — no free tier. Requires a paid credit balance.', 'intellidesc-for-woocommerce'); ?></em></p>
                     </div>
+
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e('OpenRouter', 'intellidesc-for-woocommerce'); ?></h3>
+                        <ol>
+                            <li><?php esc_html_e('Go to', 'intellidesc-for-woocommerce'); ?> <a href="https://openrouter.ai/keys" target="_blank">OpenRouter Keys</a>.</li>
+                            <li><?php echo wp_kses_post( __('Click <strong>"Create Key"</strong>.', 'intellidesc-for-woocommerce') ); ?></li>
+                            <li><?php esc_html_e('Add credit to your OpenRouter account.', 'intellidesc-for-woocommerce'); ?></li>
+                        </ol>
+                        <p><em><?php esc_html_e('One key, hundreds of models from every major provider — some with a free tier.', 'intellidesc-for-woocommerce'); ?></em></p>
+                    </div>
                 </div>
             </div>
         </details>
@@ -627,6 +683,7 @@ function ildesc_settings_page_content() {
                             <option value="anthropic" <?php selected( $current_provider, 'anthropic' ); ?>><?php esc_html_e( 'Anthropic Claude', 'intellidesc-for-woocommerce' ); ?></option>
                             <option value="openai" <?php selected( $current_provider, 'openai' ); ?>><?php esc_html_e( 'OpenAI', 'intellidesc-for-woocommerce' ); ?></option>
                             <option value="xai" <?php selected( $current_provider, 'xai' ); ?>><?php esc_html_e( 'xAI Grok', 'intellidesc-for-woocommerce' ); ?></option>
+                            <option value="openrouter" <?php selected( $current_provider, 'openrouter' ); ?>><?php esc_html_e( 'OpenRouter', 'intellidesc-for-woocommerce' ); ?></option>
                         </select>
                         <p class="description"><?php esc_html_e( 'Choose which AI provider generates your product content.', 'intellidesc-for-woocommerce' ); ?></p>
                     </td>
@@ -758,6 +815,39 @@ function ildesc_settings_page_content() {
                             <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
                         </p>
                         <?php ildesc_render_model_status_notice( 'xai', $xai_model, $models ); ?>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-openrouter" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'OpenRouter API Key', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_api_key_field( ILDESC_OPENROUTER_API_KEY, 'sk-or-...' ); ?>
+                        <p class="description">
+                            <?php esc_html_e( 'Get your key from', 'intellidesc-for-woocommerce' ); ?> <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-openrouter" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'OpenRouter Model', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php
+                        $models          = ildesc_get_openrouter_models();
+                        $openrouter_model = get_option( ILDESC_OPENROUTER_MODEL, 'openai/gpt-4.1-mini' );
+
+                        if ( empty( $models ) ) {
+                            echo '<p class="description ildesc-text-danger">' . esc_html__( 'Please save a valid API Key first to fetch available models.', 'intellidesc-for-woocommerce' ) . '</p>';
+                            echo '<input type="text" class="regular-text" name="' . esc_attr( ILDESC_OPENROUTER_MODEL ) . '" value="' . esc_attr( $openrouter_model ) . '" placeholder="openai/gpt-4.1-mini">';
+                        } else {
+                            echo '<select id="ildesc-model-select-openrouter" name="' . esc_attr( ILDESC_OPENROUTER_MODEL ) . '">';
+                            foreach ( $models as $id => $label ) {
+                                echo '<option value="' . esc_attr( $id ) . '" ' . selected( $openrouter_model, $id, false ) . '>' . esc_html( $label . ' [' . $id . ']' ) . '</option>';
+                            }
+                            echo '</select>';
+                        }
+                        ?>
+                        <p class="description">
+                            <a href="<?php echo esc_url( add_query_arg( array( 'refresh_models' => 1, '_wpnonce' => wp_create_nonce( 'ildesc_refresh_models' ) ) ) ); ?>"><?php esc_html_e( 'Refresh model list', 'intellidesc-for-woocommerce' ); ?></a>
+                        </p>
+                        <?php ildesc_render_model_status_notice( 'openrouter', $openrouter_model, $models ); ?>
                     </td>
                 </tr>
             </table>

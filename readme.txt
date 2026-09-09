@@ -3,12 +3,12 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.9.4
+Stable tag: 1.9.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI product description generator for WooCommerce. Auto-write SEO product descriptions & specs with Gemini, Claude, OpenAI or Grok.
+AI product description generator for WooCommerce. Auto-write SEO product descriptions & specs with Gemini, Claude, OpenAI, Grok, or OpenRouter.
 
 == Description ==
 
@@ -26,8 +26,9 @@ Most "AI product description" plugins lock you into a single vendor. IntelliDesc
 * **Anthropic Claude** — for stores that prefer Claude's writing style and reasoning.
 * **OpenAI** — the same GPT models that power ChatGPT.
 * **xAI Grok** — xAI's latest models.
+* **OpenRouter** — one API key, hundreds of models from every major provider, some with a free tier.
 
-Bring your own API key for any of the four, switch providers anytime from **WooCommerce → IntelliDesc**, and stay in full control of your AI costs.
+Bring your own API key for any of the five, switch providers anytime from **WooCommerce → IntelliDesc**, and stay in full control of your AI costs.
 
 = Built with WooCommerce SEO in mind =
 
@@ -61,9 +62,15 @@ Depending on which provider you select, the plugin talks to one of the following
 * Terms of Service: https://x.ai/legal/terms-of-service
 * Privacy Policy: https://x.ai/legal/privacy-policy
 
+**OpenRouter**
+* Endpoint: `https://openrouter.ai/api/v1/chat/completions`
+* Terms of Service: https://openrouter.ai/terms
+* Privacy Policy: https://openrouter.ai/privacy
+* Note: OpenRouter itself routes your request to one of many underlying model providers (OpenAI, Anthropic, Google, Meta, and others) depending on the model you select — see OpenRouter's own policies for how it handles data passed to those upstream providers.
+
 ### FEATURES (FREE VERSION)
 
-* **Multi AI Provider Support:** Generate content with Google Gemini, Anthropic Claude, OpenAI, or xAI Grok — switch anytime, using your own API key.
+* **Multi AI Provider Support:** Generate content with Google Gemini, Anthropic Claude, OpenAI, xAI Grok, or OpenRouter — switch anytime, using your own API key.
 * **Smart Specs Extractor:** Automatically searches for and extracts technical features (Processor, Material, Dimensions, etc.) into a clean table.
 * **Intelligent Descriptions:** Generates a concise Short Description and a detailed Long Description.
 * **One-Click Generation:** Just enter a product title (e.g., "Samsung Galaxy S24") and click Generate.
@@ -104,25 +111,28 @@ Unit & Format Rules and AI Model/Provider Selection are available in both versio
 
 1. Upload the plugin files to the `/wp-content/plugins/intellidesc-for-woocommerce` directory, or install the plugin through the WordPress plugins screen.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to **WooCommerce > IntelliDesc**, choose your AI provider (Gemini, Claude, OpenAI, or Grok), and enter the matching API key.
+3. Go to **WooCommerce > IntelliDesc**, choose your AI provider (Gemini, Claude, OpenAI, Grok, or OpenRouter), and enter the matching API key.
 
 **How to get a FREE API Key (Google Gemini):**
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
 2. Click "Create API Key".
 3. Copy the key and paste it into the plugin settings.
 
-Prefer a different provider? Get your API key from [Anthropic Console](https://console.anthropic.com/settings/keys), [OpenAI Platform](https://platform.openai.com/api-keys), or [xAI Console](https://console.x.ai), then select that provider in the plugin settings.
+Prefer a different provider? Get your API key from [Anthropic Console](https://console.anthropic.com/settings/keys), [OpenAI Platform](https://platform.openai.com/api-keys), [xAI Console](https://console.x.ai), or [OpenRouter](https://openrouter.ai/keys), then select that provider in the plugin settings.
 
 == Frequently Asked Questions ==
 
 = Which AI providers does this plugin support? =
-Google Gemini, Anthropic Claude, OpenAI, and xAI Grok. Pick any of them under WooCommerce → IntelliDesc and supply your own API key — no vendor lock-in.
+Google Gemini, Anthropic Claude, OpenAI, xAI Grok, and OpenRouter. Pick any of them under WooCommerce → IntelliDesc and supply your own API key — no vendor lock-in.
 
 = I'm using xAI Grok — does it fully work? =
 Grok support is newer than our Gemini/Claude/OpenAI integrations. It should work the same way, but if you're using it, we'd love to hear how it's going — please leave a review or a note in the support forum letting us know it works for you (or if you hit an issue).
 
+= What is OpenRouter, and why would I use it instead of a direct provider? =
+OpenRouter is a single API that gives you access to models from OpenAI, Anthropic, Google, Meta, and many others through one account and one key — handy if you want to try different models without signing up for each provider separately, or if you already have OpenRouter credit for other tools. Select "OpenRouter" as your AI Provider and pick any of its listed models.
+
 = Is the API free? =
-It depends on the provider. Google currently offers a generous free tier for the Gemini Flash models (5–15 requests/minute depending on the model version), which is sufficient for most stores. Anthropic, OpenAI, and xAI are pay-as-you-go. Heavy usage may require a paid plan directly from your chosen provider.
+It depends on the provider. Google currently offers a generous free tier for the Gemini Flash models (5–15 requests/minute depending on the model version), which is sufficient for most stores. Anthropic, OpenAI, and xAI are pay-as-you-go. OpenRouter is pay-as-you-go too, though it lists some free-tier models. Heavy usage may require a paid plan directly from your chosen provider.
 
 = Does it support variable products? =
 It generates descriptions and attributes for the parent product. You can then use the generated attributes (in the Pro version) to create variations.
@@ -134,9 +144,19 @@ Yes, in the Pro version. It automatically fills the Focus Keyword, Meta Title, a
 When using Google Gemini, the plugin uses Google Search grounding to find real specs. However, AI can occasionally hallucinate, regardless of provider. We highly recommend reviewing the data before publishing, especially for medical or safety-critical products.
 
 = Does the Duplicate Content Scan send my product data to an AI provider? =
-No. The scan compares your existing product descriptions entirely on your own server — nothing is sent to Gemini, Claude, OpenAI, xAI, or any other third party. It only calls out to your chosen AI provider when you click "Generate Content".
+No. The scan compares your existing product descriptions entirely on your own server — nothing is sent to Gemini, Claude, OpenAI, xAI, OpenRouter, or any other third party. It only calls out to your chosen AI provider when you click "Generate Content".
+
+== Screenshots ==
+
+1. Generate a full product description in one click from the product edit screen — powered by your chosen AI provider.
+2. Editable AI-generated technical specs table, ready to review before publishing.
+3. Choose your AI provider (Gemini, Claude, OpenAI, Grok, or OpenRouter) and manage API keys and models from one settings screen.
+4. Catalog-wide Duplicate Content Scan finds exact and near-duplicate product descriptions automatically.
 
 == Changelog ==
+
+= 1.9.5 =
+* New: **OpenRouter support** — a fifth AI provider option (WooCommerce → IntelliDesc → AI Provider). One API key gives you access to models from OpenAI, Anthropic, Google, Meta, and many others; useful if you already have OpenRouter credit or want to experiment across providers without juggling multiple accounts.
 
 = 1.9.4 =
 * New: **Content History** — every time AI generation overwrites an existing description, the previous short/long description and features are saved. Use the "Undo Last AI Generation" button in the AI Features box to revert your most recent change.

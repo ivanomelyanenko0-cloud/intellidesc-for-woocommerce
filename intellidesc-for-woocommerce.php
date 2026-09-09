@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.4
+ * Version:           1.9.5
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -35,6 +35,8 @@ define( 'ILDESC_OPENAI_API_KEY',    'ildesc_openai_api_key' );
 define( 'ILDESC_OPENAI_MODEL',      'ildesc_openai_model' );
 define( 'ILDESC_XAI_API_KEY',       'ildesc_xai_api_key' );
 define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
+define( 'ILDESC_OPENROUTER_API_KEY', 'ildesc_openrouter_api_key' );
+define( 'ILDESC_OPENROUTER_MODEL',   'ildesc_openrouter_model' );
 define( 'ILDESC_MODEL_DEPRECATION_FLAGS', 'ildesc_model_deprecation_flags' );
 define( 'ILDESC_MODEL_ADVISOR_DISMISSED', 'ildesc_model_advisor_dismissed' );
 define( 'ILDESC_DUPLICATE_SCAN_REPORT', 'ildesc_duplicate_scan_report' );
@@ -99,6 +101,7 @@ require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-gemini.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-anthropic.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-openai.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-xai.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-openrouter.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ai-dispatch.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/admin-settings.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ajax-handler.php';
