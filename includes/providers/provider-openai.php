@@ -80,6 +80,26 @@ function ildesc_ai_call_openai_compatible( $base_url, $provider_slug, $model, $p
 
     $data = json_decode( $response_body, true );
 
+    // Responses API (used when searching) lists each search as a web_search_call output item;
+    // xAI additionally summarises them under usage.server_side_tool_usage_details.
+    $searches = 0;
+    if ( $use_search_tool && ! empty( $data['output'] ) && is_array( $data['output'] ) ) {
+        foreach ( $data['output'] as $item ) {
+            if ( ( $item['type'] ?? '' ) === 'web_search_call' ) {
+                $searches++;
+            }
+        }
+    }
+    $usage    = $data['usage'] ?? [];
+    $searches = max( $searches, (int) ( $usage['server_side_tool_usage_details']['web_search_calls'] ?? 0 ) );
+    ildesc_usage_capture(
+        $model_attempt,
+        $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? 0,
+        $usage['output_tokens'] ?? $usage['completion_tokens'] ?? 0,
+        null,
+        $searches
+    );
+
     if ( $use_search_tool ) {
         $text = '';
         if ( ! empty( $data['output'] ) && is_array( $data['output'] ) ) {

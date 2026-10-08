@@ -71,6 +71,14 @@ function ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options = [] ) {
 
     $data = json_decode( $response_body, true );
 
+    ildesc_usage_capture(
+        $model_attempt,
+        $data['usage']['input_tokens'] ?? 0,
+        $data['usage']['output_tokens'] ?? 0,
+        null,
+        $data['usage']['server_tool_use']['web_search_requests'] ?? 0
+    );
+
     $text = '';
     if ( ! empty( $data['content'] ) && is_array( $data['content'] ) ) {
         foreach ( $data['content'] as $block ) {

@@ -63,6 +63,16 @@ function ildesc_ai_call_gemini( $model, $prompt, $api_key, $options = [] ) {
 
     $data = json_decode( $response_body, true );
 
+    // Thinking and search-tool tokens are billed too: as output and input respectively.
+    $usage = $data['usageMetadata'] ?? [];
+    ildesc_usage_capture(
+        $model_attempt,
+        ( $usage['promptTokenCount'] ?? 0 ) + ( $usage['toolUsePromptTokenCount'] ?? 0 ),
+        ( $usage['candidatesTokenCount'] ?? 0 ) + ( $usage['thoughtsTokenCount'] ?? 0 ),
+        null,
+        is_array( $data['candidates'][0]['groundingMetadata']['webSearchQueries'] ?? null ) ? count( $data['candidates'][0]['groundingMetadata']['webSearchQueries'] ) : 0
+    );
+
     if ( ! isset( $data['candidates'][0]['content']['parts'][0]['text'] ) ) {
         $finish_reason = $data['candidates'][0]['finishReason'] ?? '';
         if ( $finish_reason === 'SAFETY' ) {

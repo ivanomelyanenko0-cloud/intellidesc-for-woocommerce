@@ -666,6 +666,16 @@ function ildesc_settings_page_content() {
                         </ol>
                         <p><em><?php esc_html_e('One key, hundreds of models from every major provider — some with a free tier.', 'intellidesc-for-woocommerce'); ?></em></p>
                     </div>
+
+                    <div class="ildesc-info-flex-item">
+                        <h3><?php esc_html_e( 'WordPress AI (WordPress 7.0+)', 'intellidesc-for-woocommerce' ); ?></h3>
+                        <ol>
+                            <li><?php esc_html_e( 'Install the connector plugin for your AI provider.', 'intellidesc-for-woocommerce' ); ?></li>
+                            <li><?php echo wp_kses_post( __( 'Add its API key under <strong>Settings → Connectors</strong>.', 'intellidesc-for-woocommerce' ) ); ?></li>
+                            <li><?php esc_html_e( 'Select "WordPress AI (site settings)" below — no key is needed in IntelliDesc.', 'intellidesc-for-woocommerce' ); ?></li>
+                        </ol>
+                        <p><em><?php esc_html_e( 'One AI setup shared by every plugin on your site. Billing is with the provider behind your connector.', 'intellidesc-for-woocommerce' ); ?></em></p>
+                    </div>
                 </div>
             </div>
         </details>
@@ -679,6 +689,9 @@ function ildesc_settings_page_content() {
                     <td>
                         <?php $current_provider = ildesc_get_current_provider(); ?>
                         <select name="<?php echo esc_attr( ILDESC_AI_PROVIDER ); ?>" id="ildesc-provider-select">
+                            <?php if ( ildesc_wp_ai_available() || ILDESC_WP_AI_PROVIDER === $current_provider ) : ?>
+                            <option value="<?php echo esc_attr( ILDESC_WP_AI_PROVIDER ); ?>" <?php selected( $current_provider, ILDESC_WP_AI_PROVIDER ); ?>><?php esc_html_e( 'WordPress AI (site settings)', 'intellidesc-for-woocommerce' ); ?></option>
+                            <?php endif; ?>
                             <option value="gemini" <?php selected( $current_provider, 'gemini' ); ?>><?php esc_html_e( 'Google Gemini', 'intellidesc-for-woocommerce' ); ?></option>
                             <option value="anthropic" <?php selected( $current_provider, 'anthropic' ); ?>><?php esc_html_e( 'Anthropic Claude', 'intellidesc-for-woocommerce' ); ?></option>
                             <option value="openai" <?php selected( $current_provider, 'openai' ); ?>><?php esc_html_e( 'OpenAI', 'intellidesc-for-woocommerce' ); ?></option>
@@ -686,6 +699,12 @@ function ildesc_settings_page_content() {
                             <option value="openrouter" <?php selected( $current_provider, 'openrouter' ); ?>><?php esc_html_e( 'OpenRouter', 'intellidesc-for-woocommerce' ); ?></option>
                         </select>
                         <p class="description"><?php esc_html_e( 'Choose which AI provider generates your product content.', 'intellidesc-for-woocommerce' ); ?></p>
+                    </td>
+                </tr>
+                <tr valign="top" class="ildesc-provider-row ildesc-provider-row-<?php echo esc_attr( ILDESC_WP_AI_PROVIDER ); ?>" style="display:none;">
+                    <th scope="row"><?php esc_html_e( 'WordPress AI', 'intellidesc-for-woocommerce' ); ?></th>
+                    <td>
+                        <?php ildesc_render_wp_ai_status(); ?>
                     </td>
                 </tr>
                 <tr valign="top" class="ildesc-provider-row ildesc-provider-row-gemini" style="display:none;">
@@ -886,6 +905,8 @@ function ildesc_settings_page_content() {
                     </td>
                 </tr>
             </table>
+            <?php ildesc_render_faq_settings(); ?>
+
             <?php do_settings_sections( 'ildesc_settings_page' ); ?>
             <hr class="ildesc-separator">
             <div class="ildesc-pro-banner">
@@ -900,6 +921,7 @@ function ildesc_settings_page_content() {
                     <li><strong><?php esc_html_e( 'Bulk Generation Mode:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Process 50+ products at once with our Smart Queue system (no server timeouts).', 'intellidesc-for-woocommerce' ); ?></li>
                     <li><strong><?php esc_html_e( 'SEO Meta Optimization:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Automatically generate Yoast/RankMath Meta Titles and Descriptions.', 'intellidesc-for-woocommerce' ); ?></li>
                     <li><strong><?php esc_html_e( 'Tone of Voice & Presets:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Customize the AI personality and use presets for Fashion, Tech, or Automotive niches.', 'intellidesc-for-woocommerce' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Bigger FAQ Blocks:', 'intellidesc-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Up to 10 questions per product, add your own, FAQ schema markup and bulk FAQ generation.', 'intellidesc-for-woocommerce' ); ?></li>
                 </ul>
 
                 <a href="https://checkout.freemius.com/plugin/23001/plan/38599/" target="_blank" class="button button-primary">
@@ -913,4 +935,72 @@ function ildesc_settings_page_content() {
         </form>
     </div>
     <?php
+}
+
+/**
+ * Status line for the "WordPress AI" provider row: whether core ships the AI
+ * Client, whether a connector is configured, and whether it can web-search.
+ */
+function ildesc_render_wp_ai_status() {
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce checked right here.
+    if ( isset( $_GET['refresh_models'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' )
+        && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ildesc_refresh_models' ) ) {
+        delete_transient( 'ildesc_wp_ai_search_support' );
+    }
+
+    $connectors_link = '<a href="' . esc_url( admin_url( 'options-connectors.php' ) ) . '">' . esc_html__( 'Settings → Connectors', 'intellidesc-for-woocommerce' ) . '</a>';
+
+    if ( ! ildesc_wp_ai_available() ) {
+        echo '<p class="description ildesc-text-danger">' . esc_html__( 'The WordPress AI Client is not available on this site. It requires WordPress 7.0 or newer (and AI must not be disabled on the site). Choose another provider until then.', 'intellidesc-for-woocommerce' ) . '</p>';
+        return;
+    }
+
+    if ( ! ildesc_wp_ai_is_ready() ) {
+        echo '<p class="description ildesc-text-danger">' . wp_kses_post( sprintf(
+            /* translators: %s: link to the Settings → Connectors screen */
+            __( 'No AI connector is configured yet. Set one up under %s, then come back here.', 'intellidesc-for-woocommerce' ),
+            $connectors_link
+        ) ) . '</p>';
+        return;
+    }
+
+    echo '<p class="description">' . wp_kses_post( sprintf(
+        /* translators: %s: link to the Settings → Connectors screen */
+        __( 'Ready. IntelliDesc uses the AI provider and model configured under %s — no API key is stored in this plugin.', 'intellidesc-for-woocommerce' ),
+        $connectors_link
+    ) ) . '</p>';
+
+    if ( ildesc_wp_ai_supports_search() ) {
+        echo '<p class="description">' . esc_html__( 'Web search: supported — product facts are checked online.', 'intellidesc-for-woocommerce' ) . '</p>';
+    } else {
+        echo '<p class="description ildesc-text-danger">' . esc_html__( 'Web search: not supported by this connector. Content is still generated, but from the model\'s own knowledge only, so specs are more often marked "generic". For verified specs, pick a provider with your own API key.', 'intellidesc-for-woocommerce' ) . '</p>';
+    }
+}
+
+/**
+ * Warns on the IntelliDesc settings and product screens when "WordPress AI"
+ * is selected but no connector can currently serve it, since every
+ * generation would fail until that is fixed.
+ */
+add_action( 'admin_notices', 'ildesc_wp_ai_admin_notice' );
+function ildesc_wp_ai_admin_notice() {
+    if ( ! current_user_can( 'manage_options' ) || ILDESC_WP_AI_PROVIDER !== ildesc_get_current_provider() ) {
+        return;
+    }
+
+    $screen = get_current_screen();
+    if ( ! $screen ) {
+        return;
+    }
+    $is_relevant_screen = ( strpos( $screen->id, 'ildesc_settings_page' ) !== false )
+        || ( 'product' === $screen->post_type && in_array( $screen->base, [ 'post', 'edit' ], true ) );
+    if ( ! $is_relevant_screen || ildesc_wp_ai_is_ready() ) {
+        return;
+    }
+
+    $message = ildesc_wp_ai_available()
+        ? __( 'IntelliDesc is set to use WordPress AI, but no AI connector is configured under Settings → Connectors, so content generation will fail. Configure a connector there, or choose another provider in WooCommerce → IntelliDesc.', 'intellidesc-for-woocommerce' )
+        : __( 'IntelliDesc is set to use WordPress AI, which is not available on this site (it needs WordPress 7.0+ with AI features enabled), so content generation will fail. Choose another provider in WooCommerce → IntelliDesc.', 'intellidesc-for-woocommerce' );
+
+    printf( '<div class="notice notice-warning"><p>%s</p></div>', esc_html( $message ) );
 }

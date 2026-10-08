@@ -6,14 +6,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Every provider slug the plugin knows, in Settings dropdown order.
+ */
+function ildesc_ai_providers() {
+    return [ ILDESC_WP_AI_PROVIDER, 'gemini', 'anthropic', 'openai', 'xai', 'openrouter' ];
+}
+
+/**
  * Returns the currently configured AI provider slug.
- * Absence of the option resolves to 'gemini' for backward compatibility
- * with installs that predate multi-provider support.
+ *
+ * A saved choice is kept as-is — including 'wp_ai' when the AI Client has
+ * since become unavailable, so the merchant gets a clear error instead of
+ * being silently billed on another account. With nothing saved, a fresh
+ * install (no plugin API key yet) uses the site's WordPress AI connector if
+ * one is ready; everything else resolves to 'gemini', as it always has.
  */
 function ildesc_get_current_provider() {
-    $provider = get_option( ILDESC_AI_PROVIDER, 'gemini' );
-    $valid    = [ 'gemini', 'anthropic', 'openai', 'xai', 'openrouter' ];
-    return in_array( $provider, $valid, true ) ? $provider : 'gemini';
+    $provider = get_option( ILDESC_AI_PROVIDER, null );
+    if ( null === $provider || '' === $provider ) {
+        return ( ! ildesc_has_any_plugin_api_key() && ildesc_wp_ai_is_ready() ) ? ILDESC_WP_AI_PROVIDER : 'gemini';
+    }
+    return in_array( $provider, ildesc_ai_providers(), true ) ? $provider : 'gemini';
+}
+
+/**
+ * Whether an API key is saved for any of the plugin's own providers.
+ */
+function ildesc_has_any_plugin_api_key() {
+    foreach ( ildesc_ai_providers() as $provider ) {
+        if ( ildesc_provider_needs_api_key( $provider ) && '' !== trim( (string) ildesc_get_api_key_for_provider( $provider ) ) ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -21,6 +46,8 @@ function ildesc_get_current_provider() {
  */
 function ildesc_get_api_key_for_provider( $provider ) {
     switch ( $provider ) {
+        case ILDESC_WP_AI_PROVIDER:
+            return '';
         case 'anthropic':
             return get_option( ILDESC_ANTHROPIC_API_KEY, '' );
         case 'openai':
@@ -40,6 +67,8 @@ function ildesc_get_api_key_for_provider( $provider ) {
  */
 function ildesc_get_model_for_provider( $provider ) {
     switch ( $provider ) {
+        case ILDESC_WP_AI_PROVIDER:
+            return ''; // Chosen by the site's connector.
         case 'anthropic':
             return get_option( ILDESC_ANTHROPIC_MODEL, 'claude-sonnet-4-5-20250929' );
         case 'openai':
@@ -62,6 +91,8 @@ function ildesc_get_model_for_provider( $provider ) {
  */
 function ildesc_get_fallback_model_for_provider( $provider ) {
     switch ( $provider ) {
+        case ILDESC_WP_AI_PROVIDER:
+            return '';
         case 'anthropic':
             return 'claude-sonnet-4-5-20250929';
         case 'openai':
@@ -86,6 +117,7 @@ function ildesc_ai_provider_label( $provider ) {
         'openai'    => 'OpenAI',
         'xai'       => 'Grok',
         'openrouter' => 'OpenRouter',
+        ILDESC_WP_AI_PROVIDER => 'WordPress AI',
     ];
     return $labels[ $provider ] ?? ucfirst( $provider );
 }
@@ -170,19 +202,34 @@ function ildesc_set_model_advisor_dismissed( $provider, $model ) {
  * @return string|WP_Error Raw text response on success, WP_Error on failure.
  */
 function ildesc_ai_call( $provider, $model, $prompt, $api_key, $options = [] ) {
+    ildesc_usage_take(); // Drop anything left over from a previous call.
+
     switch ( $provider ) {
+        case ILDESC_WP_AI_PROVIDER:
+            $result = ildesc_ai_call_wp_ai( $prompt, $options );
+            break;
         case 'anthropic':
-            return ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options );
+            $result = ildesc_ai_call_anthropic( $model, $prompt, $api_key, $options );
+            break;
         case 'openai':
-            return ildesc_ai_call_openai( $model, $prompt, $api_key, $options );
+            $result = ildesc_ai_call_openai( $model, $prompt, $api_key, $options );
+            break;
         case 'xai':
-            return ildesc_ai_call_xai( $model, $prompt, $api_key, $options );
+            $result = ildesc_ai_call_xai( $model, $prompt, $api_key, $options );
+            break;
         case 'openrouter':
-            return ildesc_ai_call_openrouter( $model, $prompt, $api_key, $options );
+            $result = ildesc_ai_call_openrouter( $model, $prompt, $api_key, $options );
+            break;
         case 'gemini':
         default:
-            return ildesc_ai_call_gemini( $model, $prompt, $api_key, $options );
+            $provider = 'gemini';
+            $result   = ildesc_ai_call_gemini( $model, $prompt, $api_key, $options );
+            break;
     }
+
+    ildesc_usage_record_call( $provider, $model, $result, ildesc_usage_take() );
+
+    return $result;
 }
 
 /**
@@ -253,3 +300,65 @@ function ildesc_ai_error_from_response( $provider, $http_code, $response_body, $
     return new WP_Error( 'api_http_' . $http_code, $message . $api_details );
 }
 
+
+/**
+ * Whether the provider authenticates with an API key stored by this plugin.
+ */
+function ildesc_provider_needs_api_key( $provider ) {
+    return ILDESC_WP_AI_PROVIDER !== $provider;
+}
+
+/**
+ * The prompt line that pins the output language (Settings → Content language,
+ * or the site locale when left on "default").
+ */
+function ildesc_build_language_instruction() {
+    $selected_lang   = get_option( ILDESC_CONTENT_LANGUAGE, 'default' );
+    $target_language = ( $selected_lang === 'default' ) ? substr( get_locale(), 0, 2 ) : $selected_lang;
+    $target_language = ! empty( $target_language ) ? sanitize_text_field( $target_language ) : 'en';
+    return "IMPORTANT: Write ALL content in language code: '{$target_language}'.";
+}
+
+/**
+ * Extracts and decodes the JSON object from a raw model response, tolerating
+ * Markdown fences, surrounding prose and C-style comments.
+ *
+ * @return array|WP_Error Decoded object, or WP_Error('json_parse').
+ */
+function ildesc_parse_ai_json( $raw_text ) {
+    $clean_json = preg_replace( '/^```json\s*|\s*```$/i', '', trim( (string) $raw_text ) );
+    $clean_json = str_replace( array( '```', '`' ), '', $clean_json );
+
+    $start = strpos( $clean_json, '{' );
+    $end   = strrpos( $clean_json, '}' );
+
+    if ( $start === false || $end === false ) {
+        return new WP_Error( 'json_parse', __( 'JSON Parsing Error.', 'intellidesc-for-woocommerce' ) );
+    }
+
+    $json_string = substr( $clean_json, $start, $end - $start + 1 );
+    $json_string = preg_replace( '!/\*.*?\*/!s', '', $json_string );
+    $decoded     = json_decode( $json_string, true );
+
+    if ( empty( $decoded ) || ! is_array( $decoded ) ) {
+        return new WP_Error( 'json_parse', __( 'JSON Decode Error.', 'intellidesc-for-woocommerce' ) );
+    }
+
+    return $decoded;
+}
+
+/**
+ * The prompt line that sets the tone of voice (a PRO setting; Free always
+ * uses the neutral tone).
+ */
+function ildesc_build_tone_instruction() {
+    $tone_instruction = "Tone: Informative, professional, neutral. Avoid marketing fluff.";
+    if ( function_exists( 'ildesc_fs' ) && ildesc_fs()->is_premium() ) {
+        $tone = get_option( 'ildesc_tone_of_voice', 'neutral' );
+        if ( $tone === 'persuasive' ) $tone_instruction = "Tone: Persuasive, sales-oriented, engaging.";
+        elseif ( $tone === 'playful' ) $tone_instruction = "Tone: Playful, fun, creative.";
+        elseif ( $tone === 'luxury' ) $tone_instruction = "Tone: Luxury, elegant, sophisticated.";
+        elseif ( $tone === 'minimalist' ) $tone_instruction = "Tone: Minimalist, short, punchy.";
+    }
+    return $tone_instruction;
+}

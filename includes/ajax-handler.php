@@ -143,7 +143,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     // 1. Basic Checks
     $provider = ildesc_get_current_provider();
     $api_key  = ildesc_get_api_key_for_provider( $provider );
-    if (empty($api_key)) {
+    if (ildesc_provider_needs_api_key( $provider ) && empty( $api_key )) {
         /* translators: %s: AI provider name (e.g. Gemini, Claude) */
         return new WP_Error('api_key', sprintf( __('%s API Key is missing.', 'intellidesc-for-woocommerce'), ildesc_ai_provider_label( $provider ) ));
     }
@@ -190,10 +190,7 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     }
 
     // 2. Language Setup
-    $selected_lang = get_option(ILDESC_CONTENT_LANGUAGE, 'default');
-    $target_language = ($selected_lang === 'default') ? substr(get_locale(), 0, 2) : $selected_lang;
-    $target_language = !empty($target_language) ? sanitize_text_field($target_language) : 'en';
-    $language_instruction = "IMPORTANT: Write ALL content in language code: '{$target_language}'.";
+    $language_instruction = ildesc_build_language_instruction();
 
     $skip_features = (bool) get_option( ILDESC_SKIP_FEATURES, 0 );
 
@@ -342,23 +339,9 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
 
     $raw_text = $ai_result;
 
-    // Robust cleaning
-    $clean_json = preg_replace('/^```json\s*|\s*```$/', '', trim($raw_text));
-    $clean_json = str_replace(array('```', '`'), '', $clean_json);
-    
-    $start = strpos($clean_json, '{');
-    $end = strrpos($clean_json, '}');
-
-    if ($start === false || $end === false) {
-        return new WP_Error('json_parse', 'JSON Parsing Error.');
-    }
-
-    $json_string = substr($clean_json, $start, $end - $start + 1);
-    $json_string = preg_replace('!/\*.*?\*/!s', '', $json_string);
-    $features_json = json_decode($json_string, true);
-
-    if ( empty( $features_json ) ) {
-        return new WP_Error('json_parse', 'JSON Decode Error.');
+    $features_json = ildesc_parse_ai_json( $raw_text );
+    if ( is_wp_error( $features_json ) ) {
+        return $features_json;
     }
 
     $short_empty = trim( (string) ( $features_json['Short_Description'] ?? '' ) ) === '';
@@ -366,6 +349,8 @@ function ildesc_generate_content_for_product($product_id, $product_title) {
     if ( $short_empty && $long_empty ) {
         return new WP_Error( 'empty_content', __( 'The AI returned an empty response for this product. Please try again or switch AI providers/models.', 'intellidesc-for-woocommerce' ) );
     }
+
+    ildesc_usage_record_fields( ildesc_content_field_shares( $features_json ) );
 
     // ---------------------------------------------------------
     // 7. SAVING DATA

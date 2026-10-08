@@ -3,7 +3,7 @@
  * Plugin Name:       IntelliDesc for WooCommerce
  * Plugin URI:        https://wordpress.org/plugins/intellidesc-for-woocommerce/
  * Description:       Automatically fills product features using Google Gemini API.
- * Version:           1.9.5
+ * Version:           1.10.1
  * Author:            Ivan O.
  * Author URI:        https://profiles.wordpress.org/lukystile/
  * License:           GPLv2 or later
@@ -37,15 +37,22 @@ define( 'ILDESC_XAI_API_KEY',       'ildesc_xai_api_key' );
 define( 'ILDESC_XAI_MODEL',         'ildesc_xai_model' );
 define( 'ILDESC_OPENROUTER_API_KEY', 'ildesc_openrouter_api_key' );
 define( 'ILDESC_OPENROUTER_MODEL',   'ildesc_openrouter_model' );
+define( 'ILDESC_WP_AI_PROVIDER',    'wp_ai' ); // Provider slug for the WordPress AI Client (core 7.0+, Settings → Connectors).
 define( 'ILDESC_MODEL_DEPRECATION_FLAGS', 'ildesc_model_deprecation_flags' );
 define( 'ILDESC_MODEL_ADVISOR_DISMISSED', 'ildesc_model_advisor_dismissed' );
 define( 'ILDESC_DUPLICATE_SCAN_REPORT', 'ildesc_duplicate_scan_report' );
 define( 'ILDESC_CONTENT_HISTORY_LIMIT', 10 );
+define( 'ILDESC_USAGE_STATS', 'ildesc_usage_stats' );
+define( 'ILDESC_USAGE_FIELD_STATS', 'ildesc_usage_field_stats' );
+define( 'ILDESC_FAQ_TAB', 'ildesc_faq_tab' );
+define( 'ILDESC_FAQ_COUNT', 'ildesc_faq_count' );
+define( 'ILDESC_FAQ_SCHEMA', 'ildesc_faq_schema' );
+define( 'ILDESC_USAGE_RETENTION_DAYS', 90 );
 
 
 // Enqueue Assets (Unified function)
 function ildesc_enqueue_admin_assets(  $hook  ) {
-    $is_settings_page = strpos( $hook, 'ildesc_settings_page' ) !== false || strpos( $hook, 'ildesc_duplicate_scan_page' ) !== false;
+    $is_settings_page = strpos( $hook, 'ildesc_settings_page' ) !== false || strpos( $hook, 'ildesc_duplicate_scan_page' ) !== false || strpos( $hook, 'ildesc_usage_page' ) !== false;
     $is_product_page  = in_array( $hook, ['post.php', 'post-new.php', 'edit.php'] );
     
     global $post;
@@ -56,10 +63,10 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
     }
 
     // CSS
-    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.7' );
+    wp_enqueue_style( 'ildesc-admin-style', ILDESC_PLUGIN_URL . 'assets/admin-style.css', array(), '1.10' );
 
     // JS
-    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.7', true );
+    wp_enqueue_script( 'ildesc-admin-script', ILDESC_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), '1.10', true );
     
     // Localize JS
     wp_localize_script( 'ildesc-admin-script', 'ildesc_params', array(
@@ -86,7 +93,9 @@ function ildesc_enqueue_admin_assets(  $hook  ) {
         'unknown_error'   => __( 'Unknown', 'intellidesc-for-woocommerce' ),
         'placeholder_features'    => __( 'Processor, RAM...', 'intellidesc-for-woocommerce' ),
         'placeholder_feature_name' => __( 'Feature name', 'intellidesc-for-woocommerce' ),
+        'usage_reset_confirm' => __( 'Reset all recorded usage statistics? This cannot be undone.', 'intellidesc-for-woocommerce' ),
         'scan_starting'   => __( 'Starting scan...', 'intellidesc-for-woocommerce' ),
+        /* translators: 1: number of products scanned so far, 2: total number of products to scan */
         'scan_progress'   => __( 'Scanned %1$d of %2$d products...', 'intellidesc-for-woocommerce' ),
         'scan_finalizing' => __( 'Analyzing results...', 'intellidesc-for-woocommerce' ),
         'scan_done'       => __( 'Scan complete! Refreshing page...', 'intellidesc-for-woocommerce' ),
@@ -102,10 +111,15 @@ require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-anthropic.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-openai.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-xai.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-openrouter.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/providers/provider-wp-ai.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/usage-tracking.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ai-dispatch.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/admin-settings.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/ajax-handler.php';
 require_once ILDESC_PLUGIN_DIR . 'includes/duplicate-scan.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/usage-page.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/faq.php';
+require_once ILDESC_PLUGIN_DIR . 'includes/shortcodes.php';
 
 // Register Metaboxes
 function ildesc_register_metaboxes() {
@@ -225,7 +239,9 @@ function ildesc_render_product_features_metabox(  $post  ) {
             </tr>
         </tfoot>
     </table>
-    <?php 
+    <?php
+    ildesc_render_faq_metabox_section( $post );
+    ildesc_render_shortcodes_hint( $post );
 }
 
 // Save Meta

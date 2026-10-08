@@ -388,6 +388,12 @@ jQuery(document).ready(function($) {
         if ($span.length) { $span.text(text); } else { $btn.text(text); }
     }
 
+    $(document).on('submit', '.ildesc-usage-reset-form', function(e) {
+        if (!window.confirm(ildesc_params.usage_reset_confirm)) {
+            e.preventDefault();
+        }
+    });
+
     function getEditorText(id) {
         if (typeof tinymce !== 'undefined' && tinymce.get(id) && !tinymce.get(id).isHidden()) {
             return tinymce.get(id).getContent({ format: 'text' }).trim();
@@ -396,4 +402,146 @@ jQuery(document).ready(function($) {
         }
         return '';
     }
+});
+
+// ==========================================
+// FAQ BLOCK (product edit screen)
+// ==========================================
+jQuery(function($) {
+    if (!$('.ildesc-faq-box').length || typeof ildesc_faq_params === 'undefined') {
+        return;
+    }
+
+    var $list   = $('.ildesc-faq-list');
+    var $status = $('#ildesc-faq-status');
+    var rowSeq  = $list.children('.ildesc-faq-row').length;
+
+    function esc(text) {
+        return $('<div>').text(text == null ? '' : text).html();
+    }
+
+    function editorText(id) {
+        if (typeof tinymce !== 'undefined' && tinymce.get(id) && !tinymce.get(id).isHidden()) {
+            return tinymce.get(id).getContent({ format: 'text' }).trim();
+        }
+        return $('#' + id).length ? String($('#' + id).val() || '').trim() : '';
+    }
+
+    function faqRow(question, answer) {
+        var i = rowSeq++;
+        return '<div class="ildesc-faq-row">' +
+            '<div class="ildesc-faq-fields">' +
+            '<input type="text" class="ildesc-input-wide" name="ildesc_faq[' + i + '][q]" value="' + esc(question) + '" placeholder="' + esc(ildesc_faq_params.question) + '">' +
+            '<textarea class="ildesc-input-wide" rows="2" name="ildesc_faq[' + i + '][a]" placeholder="' + esc(ildesc_faq_params.answer) + '">' + esc(answer) + '</textarea>' +
+            '</div>' +
+            '<button type="button" class="button ildesc-remove-faq" aria-label="' + esc(ildesc_faq_params.remove) + '" title="' + esc(ildesc_faq_params.remove) + '">&#x2715;</button>' +
+            '</div>';
+    }
+
+    function setStatus(type, text) {
+        $status.removeClass('ildesc-msg-success ildesc-msg-error').addClass(type ? 'ildesc-msg-' + type : '').text(text || '');
+    }
+
+    function syncDeleteButton() {
+        $('#ildesc-delete-faq').toggle($list.children('.ildesc-faq-row').length > 0);
+    }
+
+    $(document).on('click', '#ildesc-generate-faq', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        if ($list.children('.ildesc-faq-row').length && !window.confirm(ildesc_faq_params.confirm_replace)) {
+            return;
+        }
+
+        var features = [];
+        $('.ildesc-feature-row').each(function() {
+            var name  = String($(this).find('input[name*="[name]"]').val() || '').trim();
+            var value = String($(this).find('input[name*="[value]"]').val() || '').trim();
+            if (name && value) features.push(name + ': ' + value);
+        });
+
+        $btn.prop('disabled', true).find('.ildesc-btn-text').text(ildesc_faq_params.generating);
+        $('.ildesc-faq-spinner').addClass('is-active');
+        setStatus('', '');
+
+        $.ajax({
+            url:      ildesc_params.ajax_url,
+            type:     'POST',
+            dataType: 'json',
+            data: {
+                action:            'ildesc_generate_faq',
+                nonce:             ildesc_params.nonce,
+                product_id:        $('#post_ID').val(),
+                product_title:     $('#title').val() || '',
+                current_excerpt:   editorText('excerpt'),
+                current_content:   editorText('content'),
+                existing_features: features.join(' | ')
+            }
+        }).done(function(response) {
+            if (response && response.success) {
+                $list.empty();
+                $.each(response.data.faq || [], function(_, item) {
+                    $list.append(faqRow(item.q, item.a));
+                });
+                setStatus('success', ildesc_faq_params.saved);
+            } else {
+                setStatus('error', ildesc_params.status_error + ((response && response.data && response.data.message) || ildesc_params.unknown_error));
+            }
+        }).fail(function(xhr, status, error) {
+            setStatus('error', ildesc_params.server_error + ' ' + error);
+        }).always(function() {
+            $btn.prop('disabled', false).find('.ildesc-btn-text').text(ildesc_faq_params.generate);
+            $('.ildesc-faq-spinner').removeClass('is-active');
+            syncDeleteButton();
+        });
+    });
+
+    $(document).on('click', '.ildesc-remove-faq', function() {
+        $(this).closest('.ildesc-faq-row').remove();
+        syncDeleteButton();
+    });
+
+    $(document).on('click', '#ildesc-delete-faq', function(e) {
+        e.preventDefault();
+        if (!window.confirm(ildesc_faq_params.confirm_delete)) return;
+        $list.empty();
+        syncDeleteButton();
+        setStatus('', ildesc_faq_params.deleted_hint);
+    });
+
+    // PRO only — the button is not rendered in the free version, and the server caps the count anyway.
+    $(document).on('click', '#ildesc-add-faq', function(e) {
+        e.preventDefault();
+        if ($list.children('.ildesc-faq-row').length >= (parseInt($list.data('max'), 10) || 0)) {
+            setStatus('error', ildesc_faq_params.max_reached);
+            return;
+        }
+        var $row = $(faqRow('', ''));
+        $list.append($row);
+        $row.find('input').focus();
+        syncDeleteButton();
+    });
+});
+
+// Metabox: copy a ready-made shortcode (includes/shortcodes.php).
+jQuery(function($) {
+    $(document).on('click', '.ildesc-copy-shortcode', function() {
+        var $btn = $(this);
+        var text = $btn.data('shortcode');
+        if (!$btn.data('label')) {
+            $btn.data('label', $btn.text());
+        }
+        var done = function() {
+            $btn.text($btn.data('copied'));
+            setTimeout(function() { $btn.text($btn.data('label')); }, 1500);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done);
+        } else {
+            var $tmp = $('<textarea>').val(text).appendTo('body').trigger('select');
+            document.execCommand('copy');
+            $tmp.remove();
+            done();
+        }
+    });
 });

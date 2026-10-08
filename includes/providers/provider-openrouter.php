@@ -72,6 +72,16 @@ function ildesc_ai_call_openrouter( $model, $prompt, $api_key, $options = [] ) {
 
     $data = json_decode( $response_body, true );
 
+    // usage.cost is the real total in USD and already includes the web-search fee.
+    $usage = $data['usage'] ?? [];
+    ildesc_usage_capture(
+        $model_attempt,
+        $usage['prompt_tokens'] ?? 0,
+        $usage['completion_tokens'] ?? 0,
+        isset( $usage['cost'] ) && is_numeric( $usage['cost'] ) ? $usage['cost'] : null,
+        $usage['server_tool_use_details']['web_search_requests'] ?? 0
+    );
+
     if ( ! isset( $data['choices'][0]['message']['content'] ) ) {
         /* translators: %s: AI provider name (e.g. OpenAI, Grok) */
         return new WP_Error( 'api_error', sprintf( __( 'Unexpected API response structure from %s.', 'intellidesc-for-woocommerce' ), ildesc_ai_provider_label( 'openrouter' ) ) );

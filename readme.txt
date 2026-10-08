@@ -3,7 +3,7 @@ Contributors: lukystile
 Tags: woocommerce, ai, product description, seo, openai
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.9.5
+Stable tag: 1.10.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -27,8 +27,9 @@ Most "AI product description" plugins lock you into a single vendor. IntelliDesc
 * **OpenAI** — the same GPT models that power ChatGPT.
 * **xAI Grok** — xAI's latest models.
 * **OpenRouter** — one API key, hundreds of models from every major provider, some with a free tier.
+* **WordPress AI (WordPress 7.0+)** — use the AI provider your site already has configured under Settings → Connectors, with no separate key in IntelliDesc.
 
-Bring your own API key for any of the five, switch providers anytime from **WooCommerce → IntelliDesc**, and stay in full control of your AI costs.
+Bring your own API key for any of the five direct providers (or reuse your site's WordPress AI connector), switch providers anytime from **WooCommerce → IntelliDesc**, and stay in full control of your AI costs.
 
 = Built with WooCommerce SEO in mind =
 
@@ -36,9 +37,9 @@ Every generated description is written to help your product pages rank and conve
 
 == External services ==
 
-This plugin connects to a third-party AI service to generate product descriptions and extract technical features. You choose which service to use under **WooCommerce → IntelliDesc** and supply your own API key for it — nothing is sent anywhere until you click "Generate Content".
+This plugin connects to a third-party AI service to generate product descriptions and extract technical features. You choose which service to use under **WooCommerce → IntelliDesc** and supply your own API key for it — nothing is sent anywhere until you click "Generate Content" or "Generate FAQ".
 
-When you click "Generate Content", the plugin sends the product title (and, if present, your existing feature/attribute data and short description notes) to the selected provider's API, which returns the generated description and specs. No personal customer data, order information, or store data beyond the product content itself is ever sent to these services.
+When you click "Generate Content", the plugin sends the product title (and, if present, your existing feature/attribute data and short description notes) to the selected provider's API, which returns the generated description and specs. When you click "Generate FAQ", it sends the product title, its current short/long description and its specs so the questions and answers stay consistent with your listing. No personal customer data, order information, or store data beyond the product content itself is ever sent to these services.
 
 Depending on which provider you select, the plugin talks to one of the following:
 
@@ -68,9 +69,14 @@ Depending on which provider you select, the plugin talks to one of the following
 * Privacy Policy: https://openrouter.ai/privacy
 * Note: OpenRouter itself routes your request to one of many underlying model providers (OpenAI, Anthropic, Google, Meta, and others) depending on the model you select — see OpenRouter's own policies for how it handles data passed to those upstream providers.
 
+**WordPress AI (site connectors, WordPress 7.0+)**
+* When you select "WordPress AI (site settings)", IntelliDesc does not contact any AI service itself: it hands the same product content to the WordPress AI Client in WordPress core, which sends it to whichever provider the site owner configured under Settings → Connectors (for example Google or OpenAI). That provider's own terms of service and privacy policy apply.
+
 ### FEATURES (FREE VERSION)
 
-* **Multi AI Provider Support:** Generate content with Google Gemini, Anthropic Claude, OpenAI, xAI Grok, or OpenRouter — switch anytime, using your own API key.
+* **Multi AI Provider Support:** Generate content with Google Gemini, Anthropic Claude, OpenAI, xAI Grok, or OpenRouter — switch anytime, using your own API key — or with the AI connector configured in WordPress 7.0+ (Settings → Connectors).
+* **Product FAQ Block:** One click writes 3 customer questions and answers for a product, based on its description and specs. Edit or remove them, and they appear in a "FAQ" tab on the product page.
+* **Shortcodes & Blocks for Page Builders:** Show the FAQ, the specs table or a product description anywhere — Elementor, Divi, Bricks, WPBakery, landing pages — with `[ildesc_faq]`, `[ildesc_specs]` and `[ildesc_field]`, or with the IntelliDesc FAQ and IntelliDesc Specs blocks in the block editor. The AI Features box lists ready-to-copy shortcodes for each product.
 * **Smart Specs Extractor:** Automatically searches for and extracts technical features (Processor, Material, Dimensions, etc.) into a clean table.
 * **Intelligent Descriptions:** Generates a concise Short Description and a detailed Long Description.
 * **One-Click Generation:** Just enter a product title (e.g., "Samsung Galaxy S24") and click Generate.
@@ -81,6 +87,7 @@ Depending on which provider you select, the plugin talks to one of the following
 * **Generate Descriptions Only:** Skip spec extraction entirely and generate only Short and Long Descriptions — useful for stores that manage attributes manually or want faster, token-light generation.
 * **Multi-language Support:** Works in English, Ukrainian, Polish, German, Spanish, French, and many more.
 * **Duplicate Content Scan:** Scan your whole catalog for products with identical or near-identical descriptions and see exactly which products are affected (WooCommerce → IntelliDesc Duplicates), so you can fix thin/duplicate content before it hurts your SEO.
+* **AI Usage Dashboard:** See how many requests you sent to each AI provider and how many tokens they used over the last 30 days, including failed requests and web searches (WooCommerce → IntelliDesc Usage) — so a bulk run never comes as a surprise on your provider's bill.
 
 ### PRO FEATURES (Available on our website)
 
@@ -93,6 +100,10 @@ Upgrade to Pro for advanced workflow automation and deeper WooCommerce integrati
 * **Niche Presets:** Optimized AI instructions for Apparel, Electronics, Beauty, Automotive, and Home goods.
 * **Tone of Voice:** Choose between Neutral, Persuasive (Sales), Playful, or Luxury styles.
 * **Extended Duplicate Scan:** Clickable links straight to each affected product, a similarity score for every near-duplicate group, and a separate Thin Content report flagging descriptions under a configurable word count.
+* **Bigger FAQ Blocks:** Up to 10 questions per product, add your own questions, FAQPage structured data (JSON-LD) for AI answer engines, and FAQ generation in bulk and WP-CLI runs.
+* **Shortcode Extras:** FAQPage structured data also for FAQs shown by shortcode or block outside the product page, striped and compact specs table styles, and `[ildesc_field field="smm"]` for the social post.
+* **Spend by Field:** See roughly how much of your AI spend goes to short descriptions, long descriptions, specs, social posts, SEO meta and FAQs.
+* **Extended Usage Dashboard:** Pick a 7/30/90-day period, see a daily chart, a per-model breakdown and an estimated cost (from the per-million-token and per-thousand-search prices you enter; OpenRouter's real per-request cost is used as reported), and export everything to CSV.
 
 ### FREE VS PRO
 
@@ -105,13 +116,16 @@ The Free version covers everything you need to generate AI product descriptions 
 * Selectable Tone of Voice (Persuasive, Playful, Luxury, Minimalist) instead of neutral-only copy.
 * Duplicate Content Scan results link directly to each product and show a similarity score, plus a separate Thin Content report — instead of just a list of names.
 
-Unit & Format Rules and AI Model/Provider Selection are available in both versions.
+* Up to 10 FAQ questions per product (instead of 3), your own added questions, FAQ schema markup and bulk FAQ generation.
+* Shortcode extras: FAQ schema for FAQs placed outside the product page, specs table styles and a social-post shortcode.
+
+Unit & Format Rules, AI Model/Provider Selection, the FAQ tab and the shortcodes/blocks are available in both versions.
 
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/intellidesc-for-woocommerce` directory, or install the plugin through the WordPress plugins screen.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to **WooCommerce > IntelliDesc**, choose your AI provider (Gemini, Claude, OpenAI, Grok, or OpenRouter), and enter the matching API key.
+3. Go to **WooCommerce > IntelliDesc**, choose your AI provider (Gemini, Claude, OpenAI, Grok, or OpenRouter), and enter the matching API key. On WordPress 7.0+ you can instead choose "WordPress AI (site settings)" to use the connector configured under Settings → Connectors.
 
 **How to get a FREE API Key (Google Gemini):**
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
@@ -123,7 +137,16 @@ Prefer a different provider? Get your API key from [Anthropic Console](https://c
 == Frequently Asked Questions ==
 
 = Which AI providers does this plugin support? =
-Google Gemini, Anthropic Claude, OpenAI, xAI Grok, and OpenRouter. Pick any of them under WooCommerce → IntelliDesc and supply your own API key — no vendor lock-in.
+Google Gemini, Anthropic Claude, OpenAI, xAI Grok, and OpenRouter. Pick any of them under WooCommerce → IntelliDesc and supply your own API key — no vendor lock-in. On WordPress 7.0+ you can also use the site-wide WordPress AI connector.
+
+= Can I use the AI provider I already set up in WordPress? =
+Yes, on WordPress 7.0 or newer. Configure a connector under Settings → Connectors, then choose "WordPress AI (site settings)" as the AI Provider in IntelliDesc — no API key is stored in the plugin. Web search depends on the connector: if it can't search the web, content is still generated but from the model's own knowledge, so specs are more often marked for review. On a fresh install with no IntelliDesc API key, WordPress AI is picked automatically when it is available; existing setups keep their provider.
+
+= How does the FAQ block work? =
+Click "Generate FAQ" in the AI Features box on the product edit screen. The AI writes customer questions and answers based on the product's current description and specs (it is a separate request from "Generate Content"). You can edit the answers before saving, and the FAQ appears in its own "FAQ" tab on the product page (you can turn the tab off in settings). The free version writes 3 questions; PRO lets you choose 3–10, add your own and output FAQPage structured data.
+
+= How do I show the FAQ or specs in Elementor, Divi or another page builder? =
+Use the shortcodes: `[ildesc_faq]` for the FAQ, `[ildesc_specs]` for the specs table, and `[ildesc_field field="long"]` or `[ildesc_field field="short"]` for a description. Paste them into your builder's Shortcode widget (or the Shortcode block). On a product page or product template they show the current product; anywhere else add the product ID, e.g. `[ildesc_faq id="123"]` — the AI Features box on each product lists them ready to copy. Optional attributes: `title="..."` adds a heading and `class="..."` a CSS class. In the block editor you can use the IntelliDesc FAQ and IntelliDesc Specs blocks instead. If the FAQ tab is also on, a FAQ placed on the product page itself appears twice — turn the tab off under WooCommerce → IntelliDesc → FAQ. PRO adds `style="striped"` / `style="compact"` for the specs table, `[ildesc_field field="smm"]` for the social post, and FAQ schema for FAQs placed on other pages.
 
 = I'm using xAI Grok — does it fully work? =
 Grok support is newer than our Gemini/Claude/OpenAI integrations. It should work the same way, but if you're using it, we'd love to hear how it's going — please leave a review or a note in the support forum letting us know it works for you (or if you hit an issue).
@@ -146,6 +169,9 @@ When using Google Gemini, the plugin uses Google Search grounding to find real s
 = Does the Duplicate Content Scan send my product data to an AI provider? =
 No. The scan compares your existing product descriptions entirely on your own server — nothing is sent to Gemini, Claude, OpenAI, xAI, OpenRouter, or any other third party. It only calls out to your chosen AI provider when you click "Generate Content".
 
+= What happens to my data if I delete the plugin? =
+Deleting the plugin from the Plugins screen removes its settings (including your API keys), usage statistics, the last duplicate-scan report, cached model lists, and the per-product undo history. The AI-generated features, FAQs and social posts saved on your products are kept, since that is your content. If you switch between the Free and PRO editions, nothing is removed while the other edition is still installed, so your settings carry over.
+
 == Screenshots ==
 
 1. Generate a full product description in one click from the product edit screen — powered by your chosen AI provider.
@@ -154,6 +180,20 @@ No. The scan compares your existing product descriptions entirely on your own se
 4. Catalog-wide Duplicate Content Scan finds exact and near-duplicate product descriptions automatically.
 
 == Changelog ==
+
+= 1.10.1 =
+* New: **Shortcodes for page builders** — `[ildesc_faq]`, `[ildesc_specs]` and `[ildesc_field field="short|long"]` show IntelliDesc content in Elementor, Divi, Bricks, WPBakery, custom templates and other pages. Without `id` they show the current product; `title` and `class` are optional.
+* New: **IntelliDesc FAQ and IntelliDesc Specs blocks** for the block editor, with a product picker and a live preview (Single Product templates and Query Loops use the current product).
+* New: the AI Features box lists ready-to-copy shortcodes for the product.
+
+= 1.10.0 =
+* New: **FAQ block** — a "Generate FAQ" button in the AI Features box writes 3 customer questions and answers based on the product's description and specs. Edit or remove them before saving; they are shown in a new "FAQ" tab on the product page (can be turned off under WooCommerce → IntelliDesc → FAQ).
+* New: **WordPress AI provider** (WordPress 7.0+) — choose "WordPress AI (site settings)" to generate content through the AI connector configured under Settings → Connectors, without storing an API key in IntelliDesc. Existing setups keep their current provider.
+* Improved: the Usage dashboard also counts FAQ requests and WordPress AI requests.
+
+= 1.9.7 =
+* New: **AI Usage dashboard** (WooCommerce → IntelliDesc Usage) — shows the number of requests, failed requests, web searches, and input/output tokens for each AI provider over the last 30 days, across all five providers. Usage is counted locally on your site from each provider's API response; nothing extra is sent anywhere. Includes a "Reset statistics" button.
+* New: **Clean uninstall** — deleting the plugin now removes its settings (including stored API keys), usage statistics, and cached data. Your AI-generated product content is kept.
 
 = 1.9.5 =
 * New: **OpenRouter support** — a fifth AI provider option (WooCommerce → IntelliDesc → AI Provider). One API key gives you access to models from OpenAI, Anthropic, Google, Meta, and many others; useful if you already have OpenRouter credit or want to experiment across providers without juggling multiple accounts.
